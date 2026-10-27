@@ -1,0 +1,870 @@
+{
+  "rulesetVersion": "1.0.0-TEMPLATE",
+  "metadata": {
+    "name": "Rural CHW screening rule set (UNAPPROVED TEMPLATE)",
+    "disclaimer": "THIS FILE IS A CONFIGURATION TEMPLATE, NOT AN APPROVED CLINICAL PROTOCOL. The thresholds below are placeholders drawn from widely published general-reference danger-sign values so that the engine can be exercised end to end. They have NOT been reviewed or approved by any clinical authority. Before any use involving real patients, the responsible health authority must review every rule, replace the thresholds with those of the locally approved protocol, record the approver in metadata.approvedBy and the approval date in metadata.approvedOn, and raise rulesetVersion. The application is a decision-support tool for trained Community Health Workers and never replaces the judgement of a qualified clinician.",
+    "source": "Placeholder values pending local clinical protocol approval.",
+    "approvedBy": null,
+    "approvedOn": null
+  },
+  "defaultResult": {
+    "riskLevel": "GREEN",
+    "recommendation": "No danger signs were detected in this screening. Share the relevant health awareness message, advise the patient to return if they feel worse, and continue routine monitoring at the next scheduled visit."
+  },
+  "rules": [
+    {
+      "id": "SHOCK-RED-01",
+      "name": "Signs of circulatory shock",
+      "category": "emergency",
+      "riskLevel": "RED",
+      "priority": 100,
+      "referralRequired": true,
+      "condition": {
+        "all": [
+          {
+            "fact": "systolicBp",
+            "op": "lt",
+            "value": 90
+          },
+          {
+            "fact": "pulseBpm",
+            "op": "gte",
+            "value": 120
+          }
+        ]
+      },
+      "label": "Low blood pressure with a very fast pulse",
+      "recommendation": "This is an emergency. Refer the patient to the nearest facility immediately and arrange transport now. Keep the patient lying down and warm while you wait.",
+      "explanation": "Low blood pressure together with a racing pulse is a recognised emergency pattern that needs facility care without delay."
+    },
+    {
+      "id": "CHILD-RED-01",
+      "name": "Child unable to feed or drink",
+      "category": "child",
+      "riskLevel": "RED",
+      "priority": 99,
+      "referralRequired": true,
+      "condition": {
+        "all": [
+          {
+            "fact": "age",
+            "op": "lt",
+            "value": 5
+          },
+          {
+            "any": [
+              {
+                "fact": "symptom.unable_to_feed",
+                "op": "present"
+              },
+              {
+                "fact": "symptom.convulsions",
+                "op": "present"
+              },
+              {
+                "fact": "symptom.unconscious",
+                "op": "present"
+              },
+              {
+                "fact": "symptom.vomits_everything",
+                "op": "present"
+              }
+            ]
+          }
+        ]
+      },
+      "label": "General danger sign in a child under five",
+      "recommendation": "This is an emergency. Refer the child to the health facility immediately and arrange transport now.",
+      "explanation": "In children under five these signs are the recognised general danger signs and are referred without delay."
+    },
+    {
+      "id": "FEVER-RED-02",
+      "name": "Fever with convulsions or confusion",
+      "category": "fever",
+      "riskLevel": "RED",
+      "priority": 99,
+      "referralRequired": true,
+      "condition": {
+        "all": [
+          {
+            "fact": "temperatureC",
+            "op": "gte",
+            "value": 38
+          },
+          {
+            "any": [
+              {
+                "fact": "symptom.convulsions",
+                "op": "present"
+              },
+              {
+                "fact": "symptom.confusion",
+                "op": "present"
+              },
+              {
+                "fact": "symptom.unconscious",
+                "op": "present"
+              }
+            ]
+          }
+        ]
+      },
+      "label": "Fever together with convulsions, confusion or reduced consciousness",
+      "recommendation": "This is an emergency. Refer immediately and arrange transport now. Do not leave the patient alone.",
+      "explanation": "Fever combined with any change in consciousness is among the most urgent danger signs in the protocol."
+    },
+    {
+      "id": "RESP-RED-01",
+      "name": "Low oxygen saturation",
+      "category": "respiratory",
+      "riskLevel": "RED",
+      "priority": 98,
+      "referralRequired": true,
+      "condition": {
+        "fact": "oxygenSaturation",
+        "op": "lt",
+        "value": 90
+      },
+      "label": "Low oxygen level in the blood",
+      "recommendation": "Refer the patient to the health facility immediately. Arrange transport now.",
+      "explanation": "An oxygen reading below this level is an urgent danger sign in every protocol this system supports."
+    },
+    {
+      "id": "DM-RED-02",
+      "name": "Very low blood glucose",
+      "category": "diabetes",
+      "riskLevel": "RED",
+      "priority": 97,
+      "referralRequired": true,
+      "condition": {
+        "fact": "bloodGlucoseMmol",
+        "op": "lt",
+        "value": 3.5
+      },
+      "label": "Very low blood sugar",
+      "recommendation": "If the patient is awake and able to swallow, give sugar or a sweet drink now, then refer immediately.",
+      "explanation": "Low blood sugar can deteriorate quickly and is treated before and during referral."
+    },
+    {
+      "id": "MAT-RED-01",
+      "name": "Danger signs in pregnancy",
+      "category": "maternal",
+      "riskLevel": "RED",
+      "priority": 96,
+      "referralRequired": true,
+      "condition": {
+        "all": [
+          {
+            "fact": "symptom.pregnant",
+            "op": "present"
+          },
+          {
+            "any": [
+              {
+                "fact": "symptom.vaginal_bleeding",
+                "op": "present"
+              },
+              {
+                "fact": "symptom.severe_abdominal_pain",
+                "op": "present"
+              },
+              {
+                "fact": "symptom.reduced_fetal_movement",
+                "op": "present"
+              },
+              {
+                "fact": "symptom.convulsions",
+                "op": "present"
+              }
+            ]
+          }
+        ]
+      },
+      "label": "Danger sign during pregnancy",
+      "recommendation": "This is an emergency. Refer to the health facility immediately and arrange transport now.",
+      "explanation": "Bleeding, severe pain, reduced fetal movement or convulsions in pregnancy are always escalated without delay."
+    },
+    {
+      "id": "HTN-RED-01",
+      "name": "Raised blood pressure with persistent headache",
+      "category": "hypertension",
+      "riskLevel": "RED",
+      "priority": 95,
+      "referralRequired": true,
+      "condition": {
+        "all": [
+          {
+            "fact": "systolicBp",
+            "op": "gte",
+            "value": 160
+          },
+          {
+            "fact": "diastolicBp",
+            "op": "gte",
+            "value": 100
+          },
+          {
+            "fact": "symptom.headache",
+            "op": "present"
+          },
+          {
+            "fact": "symptom.headache.durationDays",
+            "op": "gte",
+            "value": 2
+          }
+        ]
+      },
+      "label": "Very high blood pressure together with a persistent headache",
+      "recommendation": "Refer the patient to the health facility immediately. Do not wait for the next visit. Arrange transport if you can, and record the referral before you leave.",
+      "explanation": "A blood pressure this high combined with a headache that has lasted several days is one of the danger-sign patterns the protocol asks you to escalate the same day."
+    },
+    {
+      "id": "DEHY-RED-01",
+      "name": "Vomiting everything together with diarrhoea",
+      "category": "dehydration",
+      "riskLevel": "RED",
+      "priority": 94,
+      "referralRequired": true,
+      "condition": {
+        "all": [
+          {
+            "fact": "symptom.vomits_everything",
+            "op": "present"
+          },
+          {
+            "fact": "symptom.diarrhoea",
+            "op": "present"
+          }
+        ]
+      },
+      "label": "Losing fluid from both vomiting and diarrhoea",
+      "recommendation": "Refer to the health facility immediately. Give oral rehydration solution in small sips on the way if the patient can swallow at all, and tell the facility that both signs are present.",
+      "explanation": "Losing fluid two ways at once dehydrates a patient far faster than either sign alone, and the very young and the very old can deteriorate within hours."
+    },
+    {
+      "id": "MAT-RED-02",
+      "name": "Raised blood pressure in pregnancy",
+      "category": "maternal",
+      "riskLevel": "RED",
+      "priority": 94,
+      "referralRequired": true,
+      "condition": {
+        "all": [
+          {
+            "fact": "symptom.pregnant",
+            "op": "present"
+          },
+          {
+            "any": [
+              {
+                "fact": "systolicBp",
+                "op": "gte",
+                "value": 140
+              },
+              {
+                "fact": "diastolicBp",
+                "op": "gte",
+                "value": 90
+              }
+            ]
+          }
+        ]
+      },
+      "label": "Raised blood pressure during pregnancy",
+      "recommendation": "Refer to the health facility today for assessment. Do not wait for the next antenatal visit.",
+      "explanation": "The blood pressure threshold that triggers referral in pregnancy is lower than for other adults."
+    },
+    {
+      "id": "CHILD-RED-02",
+      "name": "Fast breathing in an infant under one year",
+      "category": "child",
+      "riskLevel": "RED",
+      "priority": 93,
+      "referralRequired": true,
+      "condition": {
+        "all": [
+          {
+            "fact": "age",
+            "op": "lt",
+            "value": 1
+          },
+          {
+            "fact": "respiratoryRate",
+            "op": "gte",
+            "value": 50
+          }
+        ]
+      },
+      "label": "Breathing is too fast for a baby of this age",
+      "recommendation": "Refer to the health facility immediately. Carry the baby upright, keep them warm, and do not delay to finish the rest of the screening.",
+      "explanation": "Breathing rate is counted against the age of the child, because what is normal for an adult is dangerously fast for an infant. A rate this high in a baby under one is a referral sign on its own."
+    },
+    {
+      "id": "CHILD-RED-03",
+      "name": "Fast breathing in a child aged one to four",
+      "category": "child",
+      "riskLevel": "RED",
+      "priority": 93,
+      "referralRequired": true,
+      "condition": {
+        "all": [
+          {
+            "fact": "age",
+            "op": "between",
+            "value": [
+              1,
+              4
+            ]
+          },
+          {
+            "fact": "respiratoryRate",
+            "op": "gte",
+            "value": 40
+          }
+        ]
+      },
+      "label": "Breathing is too fast for a child of this age",
+      "recommendation": "Refer to the health facility immediately. Keep the child calm and upright, and record the breathing count you took so the facility does not have to start again.",
+      "explanation": "The threshold is lower than for a baby and higher than for an adult, because normal breathing rate falls as a child grows."
+    },
+    {
+      "id": "RESP-RED-02",
+      "name": "Difficulty breathing",
+      "category": "respiratory",
+      "riskLevel": "RED",
+      "priority": 92,
+      "referralRequired": true,
+      "condition": {
+        "all": [
+          {
+            "fact": "symptom.difficulty_breathing",
+            "op": "present"
+          },
+          {
+            "fact": "symptom.difficulty_breathing.severity",
+            "op": "gte",
+            "value": "MODERATE"
+          }
+        ]
+      },
+      "label": "Difficulty breathing",
+      "recommendation": "Refer the patient to the health facility immediately. Keep them sitting upright and calm.",
+      "explanation": "Breathing difficulty is a danger sign that is escalated the same day."
+    },
+    {
+      "id": "CHILD-RED-04",
+      "name": "Fever in an infant under one year",
+      "category": "child",
+      "riskLevel": "RED",
+      "priority": 91,
+      "referralRequired": true,
+      "condition": {
+        "all": [
+          {
+            "fact": "age",
+            "op": "lt",
+            "value": 1
+          },
+          {
+            "fact": "temperatureC",
+            "op": "gte",
+            "value": 38
+          }
+        ]
+      },
+      "label": "A baby under one year has a fever",
+      "recommendation": "Refer to the health facility immediately, even if the baby seems otherwise well. Do not give anything other than breast milk or oral rehydration solution on the way.",
+      "explanation": "Infants can be seriously unwell with very few other signs, so fever at this age is escalated rather than watched."
+    },
+    {
+      "id": "HTN-RED-02",
+      "name": "Severely raised blood pressure",
+      "category": "hypertension",
+      "riskLevel": "RED",
+      "priority": 90,
+      "referralRequired": true,
+      "condition": {
+        "any": [
+          {
+            "fact": "systolicBp",
+            "op": "gte",
+            "value": 180
+          },
+          {
+            "fact": "diastolicBp",
+            "op": "gte",
+            "value": 120
+          }
+        ]
+      },
+      "label": "Severely raised blood pressure",
+      "recommendation": "Refer the patient to the health facility today. Record the reading on the referral note so the facility can see it.",
+      "explanation": "Readings at this level are treated as urgent regardless of whether the patient currently feels unwell."
+    },
+    {
+      "id": "FEVER-RED-01",
+      "name": "Very high fever",
+      "category": "fever",
+      "riskLevel": "RED",
+      "priority": 88,
+      "referralRequired": true,
+      "condition": {
+        "fact": "temperatureC",
+        "op": "gte",
+        "value": 39.5
+      },
+      "label": "Very high temperature",
+      "recommendation": "Refer the patient to the health facility today. Encourage fluids and keep them cool while arranging transport.",
+      "explanation": "A temperature at this level needs assessment and testing that a CHW cannot provide in the village."
+    },
+    {
+      "id": "DM-RED-01",
+      "name": "Very high blood glucose",
+      "category": "diabetes",
+      "riskLevel": "RED",
+      "priority": 87,
+      "referralRequired": true,
+      "condition": {
+        "fact": "bloodGlucoseMmol",
+        "op": "gte",
+        "value": 20
+      },
+      "label": "Very high blood sugar",
+      "recommendation": "Refer the patient to the health facility today. Encourage the patient to drink water while transport is arranged.",
+      "explanation": "A reading this high needs facility assessment on the same day."
+    },
+    {
+      "id": "GEN-AMBER-03",
+      "name": "Weight loss with a persistent cough",
+      "category": "general",
+      "riskLevel": "AMBER",
+      "priority": 71,
+      "referralRequired": false,
+      "condition": {
+        "all": [
+          {
+            "fact": "age",
+            "op": "gte",
+            "value": 5
+          },
+          {
+            "fact": "symptom.weight_loss",
+            "op": "present"
+          },
+          {
+            "fact": "symptom.cough",
+            "op": "present"
+          },
+          {
+            "fact": "symptom.cough.durationDays",
+            "op": "gte",
+            "value": 14
+          }
+        ]
+      },
+      "label": "Losing weight alongside a cough that will not clear",
+      "recommendation": "Refer to the facility for assessment and testing. Explain that the test is straightforward and that going early makes treatment easier, because this is a pattern people often delay acting on.",
+      "explanation": "This combination is one the protocol asks to have investigated rather than watched. The CHW is not diagnosing anything here — they are getting the patient to the test."
+    },
+    {
+      "id": "MAT-AMBER-02",
+      "name": "Fever in pregnancy",
+      "category": "maternal",
+      "riskLevel": "AMBER",
+      "priority": 69,
+      "referralRequired": false,
+      "condition": {
+        "all": [
+          {
+            "fact": "symptom.pregnant",
+            "op": "present"
+          },
+          {
+            "fact": "temperatureC",
+            "op": "between",
+            "value": [
+              37.5,
+              38.9
+            ]
+          }
+        ]
+      },
+      "label": "Fever during pregnancy",
+      "recommendation": "Refer the mother to the facility for assessment within 24 hours. Advise her to keep drinking fluids and to come sooner if the fever rises or she begins to shiver uncontrollably.",
+      "explanation": "Fever in pregnancy is assessed rather than treated in the community, because several of its causes need tests the CHW cannot do."
+    },
+    {
+      "id": "MAT-AMBER-03",
+      "name": "Persistent vomiting in pregnancy",
+      "category": "maternal",
+      "riskLevel": "AMBER",
+      "priority": 68,
+      "referralRequired": false,
+      "condition": {
+        "all": [
+          {
+            "fact": "symptom.pregnant",
+            "op": "present"
+          },
+          {
+            "fact": "symptom.vomits_everything",
+            "op": "present"
+          }
+        ]
+      },
+      "label": "Cannot keep food or fluids down while pregnant",
+      "recommendation": "Refer to the facility within 24 hours. Encourage small, frequent sips of clean water or oral rehydration solution in the meantime, and ask a family member to watch for drowsiness.",
+      "explanation": "A mother who cannot keep fluids down can become dehydrated quickly, and dehydration in pregnancy affects both her and the baby."
+    },
+    {
+      "id": "CHILD-AMBER-02",
+      "name": "Diarrhoea with severe stomach pain in a child",
+      "category": "child",
+      "riskLevel": "AMBER",
+      "priority": 67,
+      "referralRequired": false,
+      "condition": {
+        "all": [
+          {
+            "fact": "age",
+            "op": "lt",
+            "value": 5
+          },
+          {
+            "fact": "symptom.diarrhoea",
+            "op": "present"
+          },
+          {
+            "fact": "symptom.severe_abdominal_pain",
+            "op": "present"
+          }
+        ]
+      },
+      "label": "Diarrhoea together with severe stomach pain",
+      "recommendation": "Refer to the facility within 24 hours. Start oral rehydration solution now and show the carer how to continue it, and explain that the child must be brought straight in if they stop drinking or become drowsy.",
+      "explanation": "Diarrhoea alone is common, but with severe pain it needs assessment sooner than the next routine visit."
+    },
+    {
+      "id": "CHILD-AMBER-01",
+      "name": "Prolonged diarrhoea in a child",
+      "category": "child",
+      "riskLevel": "AMBER",
+      "priority": 66,
+      "referralRequired": false,
+      "condition": {
+        "all": [
+          {
+            "fact": "age",
+            "op": "lt",
+            "value": 5
+          },
+          {
+            "fact": "symptom.diarrhoea",
+            "op": "present"
+          },
+          {
+            "fact": "symptom.diarrhoea.durationDays",
+            "op": "gte",
+            "value": 3
+          }
+        ]
+      },
+      "label": "Diarrhoea lasting three days or more in a young child",
+      "recommendation": "Give oral rehydration advice today and arrange follow-up within two days. Refer if the child cannot drink or becomes drowsy.",
+      "explanation": "Diarrhoea that lasts several days risks dehydration and needs close follow-up."
+    },
+    {
+      "id": "GEN-AMBER-01",
+      "name": "Persistent cough",
+      "category": "general",
+      "riskLevel": "AMBER",
+      "priority": 65,
+      "referralRequired": false,
+      "condition": {
+        "all": [
+          {
+            "fact": "symptom.cough",
+            "op": "present"
+          },
+          {
+            "fact": "symptom.cough.durationDays",
+            "op": "gte",
+            "value": 14
+          }
+        ]
+      },
+      "label": "Cough lasting two weeks or more",
+      "recommendation": "Refer the patient to the health facility for screening within one week.",
+      "explanation": "A cough lasting two weeks or more is the standard trigger for facility screening."
+    },
+    {
+      "id": "MAL-AMBER-01",
+      "name": "Fever pattern suggesting malaria in an endemic area",
+      "category": "malaria",
+      "riskLevel": "AMBER",
+      "priority": 64,
+      "referralRequired": false,
+      "condition": {
+        "all": [
+          {
+            "fact": "temperatureC",
+            "op": "gte",
+            "value": 37.8
+          },
+          {
+            "any": [
+              {
+                "fact": "symptom.chills",
+                "op": "present"
+              },
+              {
+                "fact": "symptom.body_aches",
+                "op": "present"
+              }
+            ]
+          }
+        ]
+      },
+      "label": "Fever with chills or body aches",
+      "recommendation": "Refer the patient for a malaria test at the health facility within 24 hours. Share the malaria awareness message today.",
+      "explanation": "In a malaria-endemic area this pattern is the trigger for a diagnostic test; the CHW does not diagnose malaria in the village."
+    },
+    {
+      "id": "HTN-AMBER-02",
+      "name": "Very low blood pressure",
+      "category": "hypertension",
+      "riskLevel": "AMBER",
+      "priority": 62,
+      "referralRequired": false,
+      "condition": {
+        "fact": "systolicBp",
+        "op": "lt",
+        "value": 90
+      },
+      "label": "Unusually low blood pressure",
+      "recommendation": "Check the patient is not dizzy or dehydrated, offer fluids, and repeat the measurement. Arrange follow-up within one week.",
+      "explanation": "A low reading can indicate dehydration or blood loss and should be rechecked rather than ignored."
+    },
+    {
+      "id": "HTN-AMBER-01",
+      "name": "Raised blood pressure without danger signs",
+      "category": "hypertension",
+      "riskLevel": "AMBER",
+      "priority": 60,
+      "referralRequired": false,
+      "condition": {
+        "any": [
+          {
+            "fact": "systolicBp",
+            "op": "between",
+            "value": [
+              140,
+              179
+            ]
+          },
+          {
+            "fact": "diastolicBp",
+            "op": "between",
+            "value": [
+              90,
+              119
+            ]
+          }
+        ]
+      },
+      "label": "Raised blood pressure",
+      "recommendation": "Arrange a follow-up visit within two weeks and repeat the blood pressure measurement. Share the hypertension awareness message with the patient today.",
+      "explanation": "A single raised reading is not a diagnosis. The protocol asks for a repeat measurement before the patient is referred for assessment."
+    },
+    {
+      "id": "DEHY-AMBER-01",
+      "name": "Prolonged diarrhoea in an older child or adult",
+      "category": "dehydration",
+      "riskLevel": "AMBER",
+      "priority": 59,
+      "referralRequired": false,
+      "condition": {
+        "all": [
+          {
+            "fact": "age",
+            "op": "gte",
+            "value": 5
+          },
+          {
+            "fact": "symptom.diarrhoea",
+            "op": "present"
+          },
+          {
+            "fact": "symptom.diarrhoea.durationDays",
+            "op": "gte",
+            "value": 3
+          }
+        ]
+      },
+      "label": "Diarrhoea that has lasted several days",
+      "recommendation": "Arrange a follow-up within the week and start oral rehydration solution now. Advise the patient to go to the facility straight away if they cannot keep fluids down, pass blood, or become drowsy.",
+      "explanation": "Diarrhoea lasting several days needs a cause found, and the patient needs rehydrating while that happens."
+    },
+    {
+      "id": "FEVER-AMBER-01",
+      "name": "Fever",
+      "category": "fever",
+      "riskLevel": "AMBER",
+      "priority": 58,
+      "referralRequired": false,
+      "condition": {
+        "fact": "temperatureC",
+        "op": "between",
+        "value": [
+          38,
+          39.49
+        ]
+      },
+      "label": "Raised temperature",
+      "recommendation": "Advise fluids and rest, and arrange a follow-up within two days. Refer if the fever does not settle or the patient becomes worse.",
+      "explanation": "A moderate fever is monitored first; it is escalated if it persists or if danger signs appear."
+    },
+    {
+      "id": "DM-AMBER-01",
+      "name": "Raised blood glucose",
+      "category": "diabetes",
+      "riskLevel": "AMBER",
+      "priority": 57,
+      "referralRequired": false,
+      "condition": {
+        "fact": "bloodGlucoseMmol",
+        "op": "between",
+        "value": [
+          11.1,
+          19.99
+        ]
+      },
+      "label": "Raised blood sugar",
+      "recommendation": "Refer the patient for a confirmatory test at the facility within one week. Share the diabetes awareness message today.",
+      "explanation": "A single raised reading is not a diagnosis; the facility confirms it before treatment begins."
+    },
+    {
+      "id": "CARD-AMBER-01",
+      "name": "Abnormal pulse rate",
+      "category": "general",
+      "riskLevel": "AMBER",
+      "priority": 56,
+      "referralRequired": false,
+      "condition": {
+        "any": [
+          {
+            "fact": "pulseBpm",
+            "op": "gte",
+            "value": 110
+          },
+          {
+            "fact": "pulseBpm",
+            "op": "lt",
+            "value": 50
+          }
+        ]
+      },
+      "label": "Pulse outside the expected range",
+      "recommendation": "Rest the patient for five minutes and measure again. If it remains outside the normal range, arrange follow-up within one week.",
+      "explanation": "A single abnormal pulse is often temporary; the protocol asks for a repeat measurement at rest."
+    },
+    {
+      "id": "RESP-AMBER-01",
+      "name": "Raised respiratory rate",
+      "category": "respiratory",
+      "riskLevel": "AMBER",
+      "priority": 55,
+      "referralRequired": false,
+      "condition": {
+        "fact": "respiratoryRate",
+        "op": "gte",
+        "value": 24
+      },
+      "label": "Faster breathing than expected",
+      "recommendation": "Arrange a follow-up within three days and recheck the breathing rate. Refer sooner if the patient becomes short of breath.",
+      "explanation": "A raised breathing rate can be the first sign of a chest infection and is worth rechecking."
+    },
+    {
+      "id": "NUT-AMBER-01",
+      "name": "Possible undernutrition in a child",
+      "category": "nutrition",
+      "riskLevel": "AMBER",
+      "priority": 54,
+      "referralRequired": false,
+      "condition": {
+        "all": [
+          {
+            "fact": "age",
+            "op": "lt",
+            "value": 5
+          },
+          {
+            "fact": "symptom.weight_loss",
+            "op": "present"
+          }
+        ]
+      },
+      "label": "Reported weight loss in a young child",
+      "recommendation": "Refer the child to the facility for nutritional assessment within one week and share the nutrition awareness message.",
+      "explanation": "Weight loss in a young child is assessed at the facility, where growth can be plotted properly."
+    },
+    {
+      "id": "GEN-AMBER-04",
+      "name": "Older adult with dizziness and fatigue",
+      "category": "general",
+      "riskLevel": "AMBER",
+      "priority": 53,
+      "referralRequired": false,
+      "condition": {
+        "all": [
+          {
+            "fact": "age",
+            "op": "gte",
+            "value": 65
+          },
+          {
+            "fact": "symptom.dizziness",
+            "op": "present"
+          },
+          {
+            "fact": "symptom.fatigue",
+            "op": "present"
+          }
+        ]
+      },
+      "label": "An older patient is dizzy and very tired",
+      "recommendation": "Arrange a follow-up within the week and check the blood pressure sitting and then standing if you are able. Ask whether they have fallen recently, and advise them to stand up slowly.",
+      "explanation": "These two signs together in an older person are worth a proper look, most often because of the risk of a fall rather than because of any one illness."
+    },
+    {
+      "id": "GEN-AMBER-02",
+      "name": "Severe symptom reported",
+      "category": "general",
+      "riskLevel": "AMBER",
+      "priority": 50,
+      "referralRequired": false,
+      "condition": {
+        "any": [
+          {
+            "fact": "symptom.chest_pain.severity",
+            "op": "gte",
+            "value": "SEVERE"
+          },
+          {
+            "fact": "symptom.abdominal_pain.severity",
+            "op": "gte",
+            "value": "SEVERE"
+          },
+          {
+            "fact": "symptom.dizziness.severity",
+            "op": "gte",
+            "value": "SEVERE"
+          }
+        ]
+      },
+      "label": "A symptom the patient describes as severe",
+      "recommendation": "Arrange a follow-up within two days. Refer sooner if the symptom worsens or new danger signs appear.",
+      "explanation": "A symptom the patient rates as severe is followed up even when the measurements look normal."
+    }
+  ]
+}

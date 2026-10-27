@@ -1,0 +1,36 @@
+{
+  "name": "rural-health-monitor",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Offline-First Mobile Health Monitoring System for Early Disease Detection and Improved Disease Awareness in Rural Communities",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "engines": {
+    "node": ">=22.5.0"
+  },
+  "scripts": {
+    "build": "npm run typecheck && npm run build:clients",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "dev:api": "npm run dev -w @rhm/api",
+    "dev:chw": "npm run dev -w @rhm/chw",
+    "dev:dashboard": "npm run dev -w @rhm/dashboard",
+    "migrate": "npm run migrate -w @rhm/api",
+    "seed": "npm run seed -w @rhm/api",
+    "typecheck": "tsc -b --pretty",
+    "demo:reset": "node --experimental-strip-types apps/api/src/db/reset-demo.ts",
+    "build:clients": "npm run build -w @rhm/chw && npm run build -w @rhm/dashboard",
+    "verify": "npm run typecheck && npm test && npm run build:clients"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "typescript": "^5.7.0",
+    "vitest": "^5.0.5"
+  },
+  "dependencies": {
+    "@fontsource-variable/plus-jakarta-sans": "^5.3.0"
+  }
+}

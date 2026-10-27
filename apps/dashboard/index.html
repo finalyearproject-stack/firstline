@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#4f4fd0" />
+    <script>
+      /* Applied before first paint so a saved theme never flashes the other one. */
+      try {
+        var t = localStorage.getItem('firstline-theme');
+        if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t);
+      } catch (e) {}
+    </script>
+    <meta name="description" content="Health facility dashboard for community screening programmes" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>FirstLine — Programme dashboard</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

@@ -1,0 +1,1979 @@
+:root {
+  /*
+   * Brand: deep teal.
+   *
+   * Chosen over the previous forest green for two reasons, one of them clinical:
+   *   - Green is a RISK LEVEL in this product. A green primary button competes with
+   *     "GREEN — no danger signs". Teal frees green to carry exactly one meaning.
+   *   - Red/green is the common colour-vision deficiency pair. Keeping the interface
+   *     chrome out of that pair means the risk colours are doing the work alone.
+   */
+  --brand-950: #06343a;
+  --brand-900: #0a4a52;
+  --brand-800: #0d5c63;
+  --brand-700: #0f766e;
+  --brand-600: #12897f;
+  --brand-500: #14a89a;
+  --brand-300: #7fd6cd;
+  --brand-200: #a7e3dc;
+  --brand-100: #ccf1ec;
+  --brand-50:  #effbf9;
+
+  /* Neutrals carry a faint blue cast so surfaces read as cool and clean rather than
+     as flat greys sitting next to a coloured hero. */
+  --ink-900: #0a1922;
+  --ink-800: #14262f;
+  --ink-700: #2e434f;
+  --ink-600: #516773;
+  --ink-500: #5b707d;
+  --ink-400: #97a9b4;
+  --ink-300: #c3d0d8;
+  --ink-200: #e0e8ed;
+  --ink-100: #eef4f7;
+  --ink-50:  #f5f9fb;
+  --white:   #ffffff;
+
+  /*
+   * --white is now ONLY for text and marks that sit on a brand or risk fill. The card /
+   * input / sheet surface is --surface, so dark mode can flip surfaces without turning
+   * the white-on-teal header text dark with them.
+   */
+  --surface: #ffffff;
+  --surface-glass: rgba(255, 255, 255, 0.98);
+  --card-line: rgba(224, 232, 237, 0.7);
+
+  /* Brand as TEXT on a surface. Lighter in dark mode, where brand-700 would be too dim. */
+  --brand-ink: var(--brand-700);
+  --brand-ink-2: var(--brand-600);
+
+  /* Hairlines that sit with the tints and risk colours. */
+  /* White-text danger fill: fixed, so it holds 4.5:1 in both themes (6.47:1). */
+  --danger-fill: #b91c1c;
+  --line-red: #fca5a5;
+  --line-amber: #fcd34d;
+  --line-green: #86efac;
+  --line-sky: #bfd7fe;
+  --line-orange: #fcd9a5;
+
+  /* The page behind the cards. Tinted, never pure white: it is what makes white cards
+     read as floating rather than as holes. */
+  --canvas: #f2f8fa;
+
+  /* Tinted surfaces for stat tiles and icon chips. */
+  --tint-sky:     #eaf3ff;  --tint-sky-ink:     #1d4ed8;
+  --tint-violet:  #f2efff;  --tint-violet-ink:  #6d28d9;
+  --tint-amber:   #fff7e6;  --tint-amber-ink:   #b45309;
+  --tint-rose:    #ffeef1;  --tint-rose-ink:    #be123c;
+  --tint-teal:    #e6f7f5;  --tint-teal-ink:    #0f766e;
+  --tint-green:   #e9f9ef;  --tint-green-ink:   #15803d;
+
+  /* Risk. Untouched: high contrast, never pastel, always paired with a word. */
+  --risk-red-bg:   #7f1d1d;  --risk-red-fg: #ffffff;
+  --risk-red-soft: #fef2f2;  --risk-red-line: #dc2626;  --risk-red-ink: #991b1b;
+
+  --risk-amber-bg:   #92400e;  --risk-amber-fg: #ffffff;
+  --risk-amber-soft: #fffbeb;  --risk-amber-line: #d97706;  --risk-amber-ink: #92400e;
+
+  --risk-green-bg:   #14532d;  --risk-green-fg: #ffffff;
+  --risk-green-soft: #f0fdf4;  --risk-green-line: #16a34a;  --risk-green-ink: #15803d;
+
+  --radius-sm: 12px;
+  --radius:    16px;
+  --radius-lg: 22px;
+  --radius-xl: 28px;
+  --radius-hero: 30px;
+  --radius-pill: 999px;
+
+  --tap: 56px;
+
+  /*
+   * Shadows are TINTED with the brand hue rather than black. A black shadow over a
+   * coloured canvas reads as dirt; a hue-matched one reads as light.
+   */
+  --shadow-xs: 0 1px 2px rgba(10, 74, 82, 0.06);
+  --shadow-sm: 0 1px 3px rgba(10, 74, 82, 0.06), 0 3px 10px rgba(10, 74, 82, 0.05);
+  --shadow-md: 0 2px 6px rgba(10, 74, 82, 0.07), 0 10px 28px rgba(10, 74, 82, 0.08);
+  --shadow-lg: 0 4px 10px rgba(10, 74, 82, 0.08), 0 20px 48px rgba(10, 74, 82, 0.12);
+  --shadow-brand: 0 8px 24px rgba(15, 118, 110, 0.32);
+
+  /* Geometric sans, with the system stack as an immediate fallback. */
+  /* A real scale, so hierarchy does not depend on 26 / 21 / 17 being close enough to
+     read as three levels. */
+  --text-xs: 12px;
+  --text-sm: 13.5px;
+  --text-md: 17px;
+  --text-lg: 21px;
+  --text-xl: 26px;
+  --text-2xl: 30px;
+
+  --ease-out: cubic-bezier(0.22, 0.8, 0.24, 1);
+
+  color-scheme: light dark;
+
+  --font: 'Instrument Sans Variable', -apple-system, BlinkMacSystemFont, 'Segoe UI',
+    Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+html, body, #root { height: 100%; margin: 0; }
+
+body {
+  font-family: var(--font);
+  font-size: 17px;
+  line-height: 1.5;
+  color: var(--ink-900);
+  background: var(--canvas);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  touch-action: manipulation;
+}
+
+h1, h2, h3 { margin: 0; line-height: 1.2; font-weight: 700; letter-spacing: -0.015em; }
+h1 { font-size: var(--text-xl); text-wrap: balance; }
+h2 { font-size: var(--text-lg); text-wrap: balance; }
+h3 { font-size: 17px; }
+p  { margin: 0 0 12px; text-wrap: pretty; }
+
+/* ================================================================== layout */
+
+.app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  max-width: 560px;
+  margin: 0 auto;
+  background: var(--canvas);
+  position: relative;
+}
+
+/*
+ * The hero. A rich teal gradient with a soft radial highlight, so it has the depth the
+ * reference heroes get from photography — without downloading an image, and without the
+ * contrast collapse a dark photo causes in sunlight.
+ */
+.app-header {
+  position: relative;
+  z-index: 1;
+  color: var(--white);
+  padding: 16px 18px 40px;
+  padding-top: max(16px, env(safe-area-inset-top, 16px));
+  background-color: var(--brand-800);
+  background-image:
+    radial-gradient(120% 90% at 85% -10%, rgba(127, 214, 205, 0.34) 0%, rgba(127, 214, 205, 0) 60%),
+    linear-gradient(150deg, var(--brand-700) 0%, var(--brand-900) 62%, var(--brand-950) 100%);
+}
+
+.app-header__row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 34px;
+}
+
+.app-header__title {
+  font-size: 18px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app-header__back {
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.16);
+  border: none;
+  color: var(--white);
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border-radius: 12px;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.app-header__back:active { background: rgba(255, 255, 255, 0.28); }
+
+/*
+ * The content sheet. Curves up over the hero rather than butting against it — the single
+ * most recognisable move in the reference set, and pure CSS.
+ */
+.app-main {
+  position: relative;
+  z-index: 2;
+  flex: 1;
+  margin-top: -26px;
+  padding: 22px 16px 120px;
+  background: var(--canvas);
+  border-radius: var(--radius-hero) var(--radius-hero) 0 0;
+  box-shadow: 0 -2px 14px rgba(6, 52, 58, 0.06);
+}
+
+/* Floating pill navigation, lifted off the edge. */
+.app-nav {
+  position: fixed;
+  bottom: max(12px, env(safe-area-inset-bottom, 12px));
+  left: 12px;
+  right: 12px;
+  z-index: 20;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  max-width: 536px;
+  margin: 0 auto;
+  background: var(--surface-glass);
+  border: none;
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-lg);
+  padding: 6px;
+}
+
+.app-nav a {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  min-height: 52px;
+  padding: 6px 4px;
+  border-radius: var(--radius);
+  text-decoration: none;
+  color: var(--ink-500);
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.app-nav a[aria-current='page'] { color: var(--brand-ink); background: var(--brand-50); }
+.app-nav a[aria-current='page'] .app-nav__glyph { transform: translateY(-1px); }
+
+.app-nav__glyph {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 24px;
+  transition: transform 0.15s ease;
+}
+
+/* ============================================================ connectivity */
+
+/*
+ * Always present, always explicit (spec s20). Rendered as an inset pill rather than a
+ * full-bleed band so it reads as a status chip, not an error banner.
+ */
+/*
+ * The status chip sits ON the hero, the way the reference designs place status pills
+ * over their heroes. Translucent white over teal for the calm states; solid, high
+ * contrast for the two states the CHW must not miss.
+ *
+ * Note it never uses green: green is a risk level in this product.
+ */
+.conn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: fit-content;
+  max-width: 100%;
+  margin-top: 14px;
+  padding: 8px 14px;
+  border-radius: var(--radius-pill);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  border: 1px solid transparent;
+  backdrop-filter: none;
+}
+
+.conn--online  { background: rgba(255, 255, 255, 0.18); color: #ffffff; border-color: rgba(255, 255, 255, 0.28); }
+.conn--syncing { background: rgba(255, 255, 255, 0.24); color: #ffffff; border-color: rgba(255, 255, 255, 0.38); }
+.conn--offline { background: var(--tint-amber); color: var(--tint-amber-ink); border-color: var(--line-orange); }
+.conn--error   { background: var(--risk-red-soft); color: var(--risk-red-ink); border-color: var(--line-red); }
+
+.conn__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+  box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 18%, transparent);
+}
+
+.conn--syncing .conn__dot { animation: pulse 1.3s ease-in-out infinite; }
+
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .conn--syncing .conn__dot { animation: none; }
+}
+
+/* ============================================================== typography */
+
+.greeting {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink-500);
+  letter-spacing: 0.01em;
+}
+
+.display {
+  font-size: 30px;
+  font-weight: 760;
+  line-height: 1.12;
+  letter-spacing: -0.03em;
+  text-wrap: balance;
+  margin: 2px 0 0;
+}
+
+.display em { font-style: normal; color: var(--brand-ink-2); }
+
+.section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 26px 2px 12px;
+}
+
+.section-head h2 { font-size: 18px; font-weight: 700; }
+
+.section-head__action {
+  font-size: 14px;
+  font-weight: 650;
+  color: var(--brand-ink);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+/* ================================================================ hero card */
+
+/*
+ * The primary action, given the weight the references give their promo card — but the
+ * action is "screen a patient", not an advertisement.
+ */
+.hero {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  border-radius: var(--radius-hero);
+  padding: 24px;
+  margin-bottom: 14px;
+  color: var(--white);
+  text-decoration: none;
+  background-color: var(--brand-700);
+  background-image:
+    radial-gradient(100% 120% at 100% 0%, rgba(127, 214, 205, 0.4) 0%, rgba(127, 214, 205, 0) 55%),
+    linear-gradient(140deg, var(--brand-600) 0%, var(--brand-800) 55%, var(--brand-900) 100%);
+  box-shadow: var(--shadow-brand);
+}
+
+/* A large, very low-contrast ring, borrowed from the reference promo cards. Pure CSS:
+   no image to download on a 2G connection. */
+.hero::after {
+  content: '';
+  position: absolute;
+  right: -46px;
+  top: -46px;
+  width: 168px;
+  height: 168px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  border: 22px solid rgba(255, 255, 255, 0.06);
+  pointer-events: none;
+}
+
+.hero__label {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.hero__title { font-size: 23px; font-weight: 750; letter-spacing: -0.02em; margin-top: 6px; }
+.hero__sub   { font-size: 14.5px; color: rgba(255, 255, 255, 0.82); margin-top: 4px; max-width: 74%; }
+
+.hero__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  margin-top: 18px;
+  padding: 11px 20px;
+  border-radius: var(--radius-pill);
+  background: var(--white);
+  /* Fixed teal, not --brand-ink: the pill is white in both themes, and the dark-mode ink
+     is a light teal that vanishes on it. */
+  color: var(--brand-700);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+/* ============================================================== icon chips */
+
+/*
+ * The small tinted rounded square holding a glyph. Used everywhere in the references
+ * and genuinely useful here: it gives a low-literacy reader a shape to recognise before
+ * they read the label.
+ */
+.chip-icon {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  flex-shrink: 0;
+  border-radius: 13px;
+  background: var(--ink-100);
+  color: var(--ink-700);
+}
+
+.chip-icon--sm { width: 34px; height: 34px; border-radius: 11px; }
+.chip-icon--lg { width: 52px; height: 52px; border-radius: 17px; }
+
+.chip-icon--sky    { background: var(--tint-sky);    color: var(--tint-sky-ink); }
+.chip-icon--violet { background: var(--tint-violet); color: var(--tint-violet-ink); }
+.chip-icon--amber  { background: var(--tint-amber);  color: var(--tint-amber-ink); }
+.chip-icon--rose   { background: var(--tint-rose);   color: var(--tint-rose-ink); }
+.chip-icon--teal   { background: var(--tint-teal);   color: var(--tint-teal-ink); }
+.chip-icon--green  { background: var(--tint-green);  color: var(--tint-green-ink); }
+.chip-icon--solid  { background: var(--brand-700);   color: var(--white); }
+
+/* =================================================================== cards */
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--card-line);
+  border-radius: var(--radius-lg);
+  padding: 18px;
+  margin-bottom: 12px;
+  box-shadow: var(--shadow-sm);
+}
+
+.card--flat  { box-shadow: none; }
+.card--tint  { background: var(--brand-50); border-color: var(--brand-100); box-shadow: none; }
+.card--hero  { background: var(--surface); box-shadow: var(--shadow-md); border-color: transparent; }
+.card--quiet { background: var(--ink-50); border-color: var(--ink-200); box-shadow: none; }
+
+.card__label {
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--ink-500);
+  margin-bottom: 10px;
+}
+
+/* ============================================================== stat tiles */
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-bottom: 4px;
+}
+
+/*
+ * Tinted rather than white-on-white, which is the single biggest readability gain from
+ * the reference set: four white boxes on a white page all look the same at a glance.
+ */
+.stat {
+  position: relative;
+  border: none;
+  border-radius: var(--radius-lg);
+  padding: 17px;
+  background: var(--surface);
+  box-shadow: var(--shadow-xs);
+  min-height: 116px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* The chart sits inside the tile's padding rather than bleeding to its edges. Full bleed
+   is the prettier reference treatment, but the tile's corner radius clips the outermost
+   bars into wedges — and the outermost bar on the right is TODAY, drawn at full opacity
+   because it is the one the CHW is working in. A chart that shaves its most important
+   value to look tidy is worse than one that lines up with the label above it. */
+.stat__spark {
+  margin: 12px 0 0;
+  display: block;
+  line-height: 0;
+}
+
+.stat--sky    .stat__spark { color: var(--tint-sky-ink); }
+.stat--violet .stat__spark { color: var(--tint-violet-ink); }
+.stat--rose   .stat__spark { color: var(--risk-red-line); }
+.stat--amber  .stat__spark { color: var(--risk-amber-line); }
+.stat--green  .stat__spark { color: var(--risk-green-line); }
+.stat--teal   .stat__spark { color: var(--tint-teal-ink); }
+
+.stat--sky    { background: var(--tint-sky); }
+.stat--violet { background: var(--tint-violet); }
+.stat--amber  { background: var(--tint-amber); }
+.stat--rose   { background: var(--tint-rose); }
+.stat--green  { background: var(--tint-green); }
+.stat--teal   { background: var(--tint-teal); }
+
+.stat__value {
+  font-size: 30px;
+  font-weight: 750;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  margin-top: auto;
+  font-variant-numeric: tabular-nums;
+}
+
+/* When a chart is present the number sits above it rather than against the tile floor. */
+.stat:has(.stat__spark) .stat__value { margin-top: 14px; }
+
+.stat__label { font-size: 12.5px; font-weight: 600; color: var(--ink-600); margin-top: 5px; line-height: 1.35; }
+
+.stat--rose  .stat__value { color: var(--risk-red-ink); }
+.stat--amber .stat__value { color: var(--risk-amber-ink); }
+.stat--green .stat__value { color: var(--risk-green-ink); }
+
+/* ============================================================== stat strip */
+
+/*
+ * The horizontal icon + value + label row from the doctor-profile references. Here it
+ * summarises a patient rather than selling a practitioner.
+ */
+.stat-strip {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+  padding: 16px 6px;
+  background: var(--surface);
+  border: none;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 12px;
+}
+
+.stat-strip__item { display: flex; flex-direction: column; align-items: center; gap: 5px; text-align: center; }
+.stat-strip__value { font-size: 17px; font-weight: 750; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.stat-strip__label { font-size: 11.5px; color: var(--ink-500); font-weight: 600; }
+
+/* =================================================================== lists */
+
+.list { list-style: none; margin: 0; padding: 0; }
+
+.list__item {
+  display: flex;
+  align-items: flex-start;
+  gap: 13px;
+  width: 100%;
+  min-height: 76px;
+  padding: 14px;
+  margin-bottom: 10px;
+  background: var(--surface);
+  border: none;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xs);
+  text-align: left;
+  font-family: inherit;
+  font-size: 17px;
+  color: var(--ink-900);
+  cursor: pointer;
+  text-decoration: none;
+  transition: box-shadow 0.15s ease, transform 0.1s ease;
+}
+
+.list__item:active { transform: scale(0.994); box-shadow: var(--shadow-sm); }
+
+.list__avatar {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  flex-shrink: 0;
+  margin-top: 1px;
+  border-radius: 15px;
+  background: var(--brand-100);
+  color: var(--brand-ink);
+  font-weight: 750;
+  font-size: 16px;
+  letter-spacing: -0.01em;
+}
+
+.list__body { flex: 1; min-width: 0; }
+
+.list__title {
+  display: block;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.list__meta { display: block; font-size: 13.5px; color: var(--ink-500); margin-top: 3px; }
+.list__tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.list__chevron { display: grid; place-items: center; color: var(--ink-300); align-self: center; flex-shrink: 0; }
+
+/* ================================================================= buttons */
+
+.btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: var(--tap);
+  padding: 15px 20px;
+  border: 1.5px solid transparent;
+  border-radius: var(--radius);
+  font-family: inherit;
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.14s ease, transform 0.1s ease, box-shadow 0.14s ease;
+}
+
+.btn:active:not(:disabled) { transform: scale(0.988); }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+.btn--primary {
+  color: var(--white);
+  background-color: var(--brand-700);
+  background-image: linear-gradient(140deg, var(--brand-600) 0%, var(--brand-800) 100%);
+  box-shadow: var(--shadow-brand);
+}
+
+.btn--primary:active:not(:disabled) { background-image: linear-gradient(140deg, var(--brand-700) 0%, var(--brand-900) 100%); }
+
+.btn--secondary { background: var(--surface); color: var(--brand-ink); border-color: var(--brand-200); box-shadow: var(--shadow-sm); }
+.btn--quiet     { background: var(--ink-100); color: var(--ink-700); }
+.btn--danger    { background: var(--danger-fill); color: var(--white); }
+
+.btn--sm { min-height: 44px; font-size: 15px; padding: 10px 16px; width: auto; border-radius: var(--radius-sm); }
+
+.btn-row { display: flex; gap: 10px; }
+.btn-row .btn { flex: 1; }
+
+/* =================================================================== forms */
+
+.field { margin-bottom: 18px; }
+
+.field__label {
+  display: block;
+  font-size: 15.5px;
+  font-weight: 650;
+  margin-bottom: 6px;
+  color: var(--ink-900);
+  letter-spacing: -0.01em;
+}
+
+.field__hint  { font-size: 13.5px; color: var(--ink-500); margin-bottom: 8px; line-height: 1.45; }
+.field__error { font-size: 14px; font-weight: 650; color: var(--risk-red-ink); margin-top: 7px; }
+
+.input, .select, .textarea {
+  width: 100%;
+  min-height: var(--tap);
+  padding: 13px 15px;
+  border: 1.5px solid var(--ink-200);
+  border-radius: var(--radius);
+  font-family: inherit;
+  /* 16px minimum or iOS Safari zooms on focus. */
+  font-size: 17px;
+  box-shadow: var(--shadow-xs);
+  color: var(--ink-900);
+  background: var(--surface);
+  transition: border-color 0.14s ease, box-shadow 0.14s ease;
+}
+
+.textarea { min-height: 104px; padding-top: 13px; resize: vertical; }
+
+.input:focus, .select:focus, .textarea:focus {
+  outline: none;
+  border-color: var(--brand-600);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--brand-600) 14%, transparent);
+}
+
+/* Keyboard users still get a visible ring on every interactive element. */
+.btn:focus-visible, .chip:focus-visible, .symptom:focus-visible,
+.pin__key:focus-visible, .list__item:focus-visible, .pill:focus-visible {
+  outline: 3px solid var(--brand-ink-2);
+  outline-offset: 2px;
+}
+
+.input--invalid { border-color: var(--risk-red-line); }
+
+.input--number {
+  font-size: 23px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  text-align: center;
+  letter-spacing: 0.01em;
+}
+
+.bp-row { display: flex; align-items: center; gap: 10px; }
+.bp-row .input { flex: 1; }
+.bp-row__sep { font-size: 26px; font-weight: 700; color: var(--ink-500); }
+
+/* Selection chips. */
+.chip-group { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 50px;
+  padding: 11px 18px;
+  border: 1.5px solid var(--ink-200);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 650;
+  color: var(--ink-700);
+  cursor: pointer;
+  transition: all 0.14s ease;
+}
+
+.chip[aria-pressed='true'], .chip--on {
+  background: var(--brand-700);
+  border-color: var(--brand-700);
+  color: var(--white);
+  box-shadow: var(--shadow-brand);
+}
+
+.chip--grow { flex: 1; }
+
+/* Pill selectors for dates and times, as in the booking references. */
+.pill-row {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 2px 2px 8px;
+  scrollbar-width: none;
+}
+
+.pill-row::-webkit-scrollbar { display: none; }
+
+.pill {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-width: 58px;
+  min-height: 66px;
+  padding: 10px 12px;
+  flex-shrink: 0;
+  border: 1.5px solid var(--ink-200);
+  border-radius: var(--radius);
+  background: var(--surface);
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.14s ease;
+}
+
+.pill__value { font-size: 18px; font-weight: 700; color: var(--ink-900); }
+.pill__label { font-size: 11px; font-weight: 600; color: var(--ink-500); }
+
+.pill[aria-pressed='true'] { background: var(--brand-700); border-color: var(--brand-700); box-shadow: var(--shadow-brand); }
+.pill[aria-pressed='true'] .pill__value,
+.pill[aria-pressed='true'] .pill__label { color: var(--white); }
+
+/* Symptom cards: the main minimise-typing surface (spec s6). */
+.symptom-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(152px, 1fr));
+  gap: 10px;
+}
+
+.symptom {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-height: 68px;
+  padding: 11px 13px;
+  border: 1.5px solid var(--ink-200);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow-xs);
+  font-family: inherit;
+  font-size: 15.5px;
+  font-weight: 650;
+  text-align: left;
+  line-height: 1.3;
+  color: var(--ink-900);
+  cursor: pointer;
+  transition: all 0.14s ease;
+}
+
+.symptom[aria-pressed='true'] {
+  border-color: var(--brand-600);
+  background: var(--tint-teal);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand-600) 12%, transparent);
+}
+
+.symptom__glyph {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  border-radius: 12px;
+  background: var(--ink-100);
+  color: var(--ink-600);
+  transition: all 0.14s ease;
+}
+
+.symptom[aria-pressed='true'] .symptom__glyph { background: var(--brand-700); color: var(--white); }
+
+/* ============================================================ triage result */
+
+/*
+ * Spec s9. Unapologetically the loudest element in the application: full-bleed colour,
+ * one very large word, then the action. A CHW must be able to read the verdict across a
+ * room, and a distracted one must not be able to mistake AMBER for RED.
+ *
+ * This is where the consumer-app pastel treatment was deliberately rejected.
+ */
+.result {
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  margin-bottom: 16px;
+  border: 2px solid;
+  box-shadow: var(--shadow-md);
+}
+
+.result__banner { padding: 30px 20px; text-align: center; }
+
+.result__level {
+  font-size: 46px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  line-height: 1;
+}
+
+.result__headline {
+  font-size: 19px;
+  font-weight: 700;
+  margin-top: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.result__body { padding: 20px; background: var(--surface); }
+
+.result--RED   { border-color: var(--risk-red-line); }
+.result--AMBER { border-color: var(--risk-amber-line); }
+.result--GREEN { border-color: var(--risk-green-line); }
+
+.result--RED   .result__banner { background: var(--risk-red-bg);   color: var(--risk-red-fg); }
+.result--AMBER .result__banner { background: var(--risk-amber-bg); color: var(--risk-amber-fg); }
+.result--GREEN .result__banner { background: var(--risk-green-bg); color: var(--risk-green-fg); }
+
+.result__section-label {
+  font-size: 11.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--ink-500);
+  margin: 18px 0 7px;
+}
+
+.result__action { font-size: 18px; font-weight: 600; line-height: 1.5; }
+
+.indicator-list { margin: 0; padding-left: 20px; }
+.indicator-list li { margin-bottom: 7px; font-size: 16px; line-height: 1.45; }
+
+.disclaimer {
+  margin-top: 18px;
+  padding: 14px 15px;
+  background: var(--ink-100);
+  border-radius: var(--radius);
+  font-size: 13px;
+  color: var(--ink-600);
+  line-height: 1.5;
+}
+
+/* ================================================================== badges */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 11px;
+  border-radius: var(--radius-pill);
+  font-size: 11.5px;
+  font-weight: 750;
+  letter-spacing: 0.035em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  border: 1px solid;
+}
+
+.badge--RED   { background: var(--risk-red-soft);   color: var(--risk-red-ink);   border-color: var(--line-red); }
+.badge--AMBER { background: var(--risk-amber-soft); color: var(--risk-amber-ink); border-color: var(--line-amber); }
+.badge--GREEN { background: var(--risk-green-soft); color: var(--risk-green-ink); border-color: var(--line-green); }
+
+.badge--PENDING { background: var(--tint-amber); color: var(--tint-amber-ink); border-color: var(--line-orange); }
+.badge--SYNCED  { background: var(--tint-teal);  color: var(--tint-teal-ink);  border-color: var(--brand-200); }
+.badge--SYNCING { background: var(--tint-sky);   color: var(--tint-sky-ink);   border-color: var(--line-sky); }
+.badge--FAILED  { background: var(--risk-red-soft); color: var(--risk-red-ink); border-color: var(--line-red); }
+
+/* ================================================================== alerts */
+
+.alert {
+  padding: 15px 16px;
+  border-radius: var(--radius);
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.5;
+  margin-bottom: 16px;
+  border: 1px solid;
+}
+
+.alert--error   { background: var(--risk-red-soft); color: var(--risk-red-ink);   border-color: var(--line-red); }
+.alert--success { background: var(--tint-teal);    color: var(--tint-teal-ink);  border-color: var(--brand-200); }
+.alert--info    { background: var(--tint-sky);      color: var(--tint-sky-ink);   border-color: var(--line-sky); }
+.alert--warning { background: var(--tint-amber);    color: var(--tint-amber-ink); border-color: var(--line-orange); }
+
+/* ================================================================ progress */
+
+.progress { height: 9px; border-radius: var(--radius-pill); background: var(--ink-200); overflow: hidden; }
+.progress__bar { height: 100%; background: var(--brand-600); border-radius: var(--radius-pill); transition: width 0.25s ease; }
+
+.steps { display: flex; gap: 6px; margin-bottom: 22px; }
+.steps__step { flex: 1; height: 5px; border-radius: var(--radius-pill); background: var(--ink-200); transition: background 0.2s ease; }
+.steps__step--done   { background: var(--brand-600); }
+.steps__step--active { background: var(--brand-600); opacity: 0.45; }
+
+.step-label {
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--ink-500);
+  margin-bottom: 5px;
+}
+
+/* =================================================================== empty */
+
+.empty { text-align: center; padding: 52px 24px; color: var(--ink-500); }
+
+.empty__glyph {
+  display: grid;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  margin: 0 auto 18px;
+  border-radius: 24px;
+  background: var(--tint-teal);
+  color: var(--brand-ink-2);
+}
+
+/* =============================================================== pin entry */
+
+.pin { max-width: 330px; margin: 0 auto; text-align: center; }
+
+.pin__dots { display: flex; justify-content: center; gap: 15px; margin: 28px 0 32px; }
+
+.pin__dot {
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  border: 2px solid var(--ink-300);
+  transition: all 0.15s ease;
+}
+
+.pin__dot--filled { background: var(--brand-700); border-color: var(--brand-700); transform: scale(1.1); }
+
+.pin__pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+
+.pin__key {
+  min-height: 66px;
+  border: 1px solid var(--ink-200);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow-xs);
+  font-family: inherit;
+  font-size: 25px;
+  font-weight: 650;
+  color: var(--ink-900);
+  cursor: pointer;
+  transition: background 0.12s ease, transform 0.08s ease;
+}
+
+.pin__key:active { background: var(--ink-100); transform: scale(0.96); }
+.pin__key--quiet { background: var(--ink-50); font-size: 17px; font-weight: 650; color: var(--ink-600); }
+
+/* =============================================================== awareness */
+
+.awareness__body { font-size: 17px; line-height: 1.68; white-space: pre-wrap; color: var(--ink-800); }
+
+.audio-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  background: var(--tint-teal);
+  border: 1px solid var(--brand-100);
+  border-radius: var(--radius);
+  margin-bottom: 16px;
+}
+
+.translation-note {
+  font-size: 13.5px;
+  padding: 12px 14px;
+  border-radius: var(--radius);
+  background: var(--tint-amber);
+  color: var(--tint-amber-ink);
+  border: 1px solid var(--line-orange);
+  margin-bottom: 14px;
+  line-height: 1.5;
+}
+
+/* ================================================================= utility */
+
+.stack > * + * { margin-top: 12px; }
+.row { display: flex; align-items: center; gap: 10px; }
+.row--between { justify-content: space-between; }
+.spacer { flex: 1; }
+.muted { color: var(--ink-500); font-size: 15px; }
+.small { font-size: 13.5px; }
+.center { text-align: center; }
+.mt-16 { margin-top: 16px; }
+.mb-16 { margin-bottom: 16px; }
+
+.sr-only {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Small phones: 360px-wide devices are common in the target deployment. */
+@media (max-width: 370px) {
+  body { font-size: 16px; }
+  .app-main { padding: 18px 12px 116px; }
+  .display { font-size: 25px; }
+  .result__level { font-size: 40px; }
+  .stat { min-height: 104px; padding: 14px; }
+  .stat__value { font-size: 27px; }
+  .symptom-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+}
+
+
+/* ===================================================================== motion */
+
+/*
+ * Screens arrive rather than appear. Each screen is its own route and remounts, so a
+ * plain CSS animation on its first children replays on every navigation with no router
+ * integration. Short (<300ms) and transform/opacity only: nothing here can delay a CHW
+ * or cost layout work on a low-end phone.
+ */
+@keyframes rise {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: none; }
+}
+
+@keyframes pop {
+  from { opacity: 0; transform: scale(0.96); }
+  to   { opacity: 1; transform: none; }
+}
+
+.app-main > * { animation: rise 0.34s var(--ease-out) both; }
+.app-main > *:nth-child(2) { animation-delay: 0.04s; }
+.app-main > *:nth-child(3) { animation-delay: 0.08s; }
+.app-main > *:nth-child(4) { animation-delay: 0.12s; }
+.app-main > *:nth-child(5) { animation-delay: 0.16s; }
+.app-main > *:nth-child(6) { animation-delay: 0.2s; }
+.app-main > *:nth-child(n+7) { animation-delay: 0.24s; }
+
+.stat-grid > .stat { animation: pop 0.38s var(--ease-out) both; }
+.stat-grid > .stat:nth-child(2) { animation-delay: 0.05s; }
+.stat-grid > .stat:nth-child(3) { animation-delay: 0.1s; }
+.stat-grid > .stat:nth-child(4) { animation-delay: 0.15s; }
+
+/* Everything tappable answers the thumb. */
+.card:active, .stat:active, .hero:active, .app-nav a:active { transform: scale(0.99); }
+.hero, .card, .stat { transition: transform 0.12s ease, box-shadow 0.15s ease; }
+
+/* ================================================================== skeleton */
+
+/*
+ * Shown while the device database answers. Without it a tile paints "0" for a frame and
+ * then jumps to the real number, which reads as the data being wrong.
+ */
+.skeleton {
+  display: block;
+  border-radius: 8px;
+  background: linear-gradient(90deg, var(--ink-100) 25%, var(--ink-200) 50%, var(--ink-100) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s linear infinite;
+}
+
+@keyframes shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.stat--loading { background: var(--surface); }
+.stat--loading .skeleton--icon  { width: 34px; height: 34px; border-radius: 11px; }
+.stat--loading .skeleton--value { width: 46%; height: 28px; margin-top: auto; }
+.stat--loading .skeleton--label { width: 78%; height: 12px; margin-top: 10px; }
+
+/* ================================================================ empty state */
+
+.empty { animation: rise 0.4s var(--ease-out) both; }
+.empty .btn { width: auto; display: inline-flex; margin-top: 22px; padding-left: 26px; padding-right: 26px; }
+
+/* ============================================================ result: arrival */
+
+/*
+ * The verdict lands. It is the one screen where weight is the point, so the banner scales
+ * in, the icon ring pulses twice (not forever: a looping animation on a clinical result is
+ * a distraction), and the action sits in a panel keyed to the risk colour so "what to do"
+ * is the second thing read, immediately under the word.
+ */
+.result { animation: pop 0.42s var(--ease-out) both; }
+.result__body { animation: rise 0.4s 0.18s var(--ease-out) both; }
+
+.result__banner { position: relative; padding: 26px 20px 28px; }
+
+.result__mark {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 62px;
+  height: 62px;
+  margin: 0 auto 14px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.16);
+  border: 2px solid rgba(255, 255, 255, 0.5);
+}
+
+.result--RED .result__mark::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.7);
+  animation: ring 1.5s var(--ease-out) 0.3s 2 both;
+}
+
+@keyframes ring {
+  from { transform: scale(1); opacity: 0.9; }
+  to   { transform: scale(1.75); opacity: 0; }
+}
+
+.result__action {
+  margin: 0;
+  padding: 14px 16px;
+  border-radius: var(--radius);
+  border-left: 5px solid;
+}
+
+.result--RED   .result__action { background: var(--risk-red-soft);   border-color: var(--risk-red-line);   color: var(--risk-red-ink); }
+.result--AMBER .result__action { background: var(--risk-amber-soft); border-color: var(--risk-amber-line); color: var(--risk-amber-ink); }
+.result--GREEN .result__action { background: var(--risk-green-soft); border-color: var(--risk-green-line); color: var(--risk-green-ink); }
+
+@media (prefers-reduced-motion: reduce) {
+  .app-main > *, .stat-grid > .stat, .result, .result__body, .empty { animation: none; }
+  .result--RED .result__mark::after { animation: none; opacity: 0; }
+  .skeleton { animation: none; }
+  .hero, .card, .stat { transition: none; }
+}
+
+/* ================================================================ dark theme */
+
+/* Follows the phone's setting. [data-theme] overrides it either way. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    /* Surfaces: cool near-black, one step lighter per layer so cards still float. */
+    --canvas: #0a1519;
+    --surface: #112127;
+    --surface-glass: rgba(17, 33, 39, 0.96);
+    --card-line: rgba(255, 255, 255, 0.07);
+
+    /* The neutral scale inverts: 900 is the brightest text, 50 the faintest fill. */
+    --ink-900: #e9f2f6;
+    --ink-800: #d6e3ea;
+    --ink-700: #b7c8d2;
+    --ink-600: #95aab6;
+    --ink-500: #8aa0ac;
+    --ink-400: #5d727e;
+    --ink-300: #3b4e58;
+    --ink-200: #26363f;
+    --ink-100: #1b2a32;
+    --ink-50:  #15222a;
+
+    --brand-50:  #0e2a2d;
+    --brand-100: #133a3d;
+    --brand-200: #1f5557;
+    --brand-ink: #5fd0c4;
+    --brand-ink-2: #7fd6cd;
+
+    --tint-sky:     #12243b;  --tint-sky-ink:     #93bbfd;
+    --tint-violet:  #1f1b39;  --tint-violet-ink:  #bba7f6;
+    --tint-amber:   #2b2113;  --tint-amber-ink:   #f2b86b;
+    --tint-rose:    #2c1519;  --tint-rose-ink:    #f4a3b2;
+    --tint-teal:    #0f2e2f;  --tint-teal-ink:    #5fd0c4;
+    --tint-green:   #0f2a1b;  --tint-green-ink:   #6ee0a0;
+
+    /* Risk keeps its banner fills (white text on a deep colour reads on any theme); only
+       the soft panels and inks change, and they stay well clear of pastel. */
+    --risk-red-soft:   #2a1417;  --risk-red-line:   #ef4444;  --risk-red-ink:   #fca5a5;
+    --risk-amber-soft: #2b2010;  --risk-amber-line: #f59e0b;  --risk-amber-ink: #fcd34d;
+    --risk-green-soft: #0f2819;  --risk-green-line: #22c55e;  --risk-green-ink: #86efac;
+
+    --line-red: #5b2227;
+    --line-amber: #5a4318;
+    --line-green: #1d5a34;
+    --line-sky: #26436b;
+    --line-orange: #5a3e1a;
+
+    --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4), 0 3px 10px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 2px 6px rgba(0, 0, 0, 0.45), 0 10px 28px rgba(0, 0, 0, 0.35);
+    --shadow-lg: 0 4px 10px rgba(0, 0, 0, 0.5), 0 20px 48px rgba(0, 0, 0, 0.45);
+  }
+}
+
+:root[data-theme='dark'] {
+    /* Surfaces: cool near-black, one step lighter per layer so cards still float. */
+    --canvas: #0a1519;
+    --surface: #112127;
+    --surface-glass: rgba(17, 33, 39, 0.96);
+    --card-line: rgba(255, 255, 255, 0.07);
+
+    /* The neutral scale inverts: 900 is the brightest text, 50 the faintest fill. */
+    --ink-900: #e9f2f6;
+    --ink-800: #d6e3ea;
+    --ink-700: #b7c8d2;
+    --ink-600: #95aab6;
+    --ink-500: #8aa0ac;
+    --ink-400: #5d727e;
+    --ink-300: #3b4e58;
+    --ink-200: #26363f;
+    --ink-100: #1b2a32;
+    --ink-50:  #15222a;
+
+    --brand-50:  #0e2a2d;
+    --brand-100: #133a3d;
+    --brand-200: #1f5557;
+    --brand-ink: #5fd0c4;
+    --brand-ink-2: #7fd6cd;
+
+    --tint-sky:     #12243b;  --tint-sky-ink:     #93bbfd;
+    --tint-violet:  #1f1b39;  --tint-violet-ink:  #bba7f6;
+    --tint-amber:   #2b2113;  --tint-amber-ink:   #f2b86b;
+    --tint-rose:    #2c1519;  --tint-rose-ink:    #f4a3b2;
+    --tint-teal:    #0f2e2f;  --tint-teal-ink:    #5fd0c4;
+    --tint-green:   #0f2a1b;  --tint-green-ink:   #6ee0a0;
+
+    /* Risk keeps its banner fills (white text on a deep colour reads on any theme); only
+       the soft panels and inks change, and they stay well clear of pastel. */
+    --risk-red-soft:   #2a1417;  --risk-red-line:   #ef4444;  --risk-red-ink:   #fca5a5;
+    --risk-amber-soft: #2b2010;  --risk-amber-line: #f59e0b;  --risk-amber-ink: #fcd34d;
+    --risk-green-soft: #0f2819;  --risk-green-line: #22c55e;  --risk-green-ink: #86efac;
+
+    --line-red: #5b2227;
+    --line-amber: #5a4318;
+    --line-green: #1d5a34;
+    --line-sky: #26436b;
+    --line-orange: #5a3e1a;
+
+    --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4), 0 3px 10px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 2px 6px rgba(0, 0, 0, 0.45), 0 10px 28px rgba(0, 0, 0, 0.35);
+    --shadow-lg: 0 4px 10px rgba(0, 0, 0, 0.5), 0 20px 48px rgba(0, 0, 0, 0.45);
+}
+:root[data-theme='light'] { color-scheme: light; }
+:root[data-theme='dark'] { color-scheme: dark; }
+
+/* ================================================================ identity: modern product */
+
+/*
+ * The same system as the dashboard, adapted for a phone held in one hand:
+ *
+ *   - A translucent sticky header on the page's own plane, not a coloured slab.
+ *   - One accent (iris) for the primary action; colour otherwise means risk.
+ *   - Grouped lists and bordered tiles with precise 1px edges; Geist with tabular figures.
+ *   - A frosted tab bar. Touch targets stay at 48px or more.
+ *
+ * Tokens first, then components. Kept as one block so it can be reviewed or reverted whole.
+ */
+
+:root {
+  /* Neutral zinc surfaces; one vivid accent (iris). Colour is reserved for the accent and
+     for risk, so both read instantly against an otherwise quiet interface. */
+  --canvas: #fafafa;
+  --surface: #ffffff;
+  --surface-2: #f4f4f5;
+  --surface-glass: rgba(255, 255, 255, 0.82);
+
+  --ink-900: #09090b;
+  --ink-800: #18181b;
+  --ink-700: #3f3f46;
+  --ink-600: #52525b;
+  --ink-500: #6b6b74;
+  --ink-400: #a1a1aa;
+  --ink-300: #d4d4d8;
+  --ink-200: #e4e4e7;
+  --ink-100: #f4f4f5;
+  --ink-50:  #fafafa;
+
+  --hairline: #e4e4e7;
+  --hairline-soft: #f0f0f2;
+  --card-line: var(--hairline);
+
+  /* Iris. Chosen because it sits well clear of the red / amber / green risk scale: the accent
+     can never be mistaken for a clinical verdict, including by colour-blind readers. */
+  --brand-950: #1a1a4b;
+  --brand-900: #262673;
+  --brand-800: #3434a8;
+  --brand-700: #4f4fd0;
+  --brand-600: #5d5ee0;
+  --brand-500: #7173ec;
+  --brand-300: #b4b6f7;
+  --brand-200: #d2d3fa;
+  --brand-100: #e6e7fd;
+  --brand-50:  #f3f3fe;
+  --brand-ink: #4f4fd0;
+  --brand-ink-2: #4f4fd0;
+
+  --tint-sky:     #eff6ff;  --tint-sky-ink:     #1d4ed8;
+  --tint-violet:  #f5f3ff;  --tint-violet-ink:  #6d28d9;
+  --tint-amber:   #fffbeb;  --tint-amber-ink:   #9a5700;
+  --tint-rose:    #fef2f2;  --tint-rose-ink:    #c8291d;
+  --tint-teal:    #f3f3fe;  --tint-teal-ink:    #4f4fd0;
+  --tint-green:   #f0fdf4;  --tint-green-ink:   #1f7a3f;
+
+  --risk-red-bg:   #b42318;  --risk-red-fg: #ffffff;
+  --risk-red-soft: #fef2f2;  --risk-red-line: #e5484d;  --risk-red-ink: #c8291d;
+  --risk-amber-bg:   #9a5200;  --risk-amber-fg: #ffffff;
+  --risk-amber-soft: #fffbeb;  --risk-amber-line: #f59e0b;  --risk-amber-ink: #9a5700;
+  --risk-green-bg:   #18794e;  --risk-green-fg: #ffffff;
+  --risk-green-soft: #f0fdf4;  --risk-green-line: #30a46c;  --risk-green-ink: #1f7a3f;
+
+  --line-red: #fecaca;
+  --line-amber: #fde68a;
+  --line-green: #bbf7d0;
+  --line-sky: #bfdbfe;
+  --line-orange: #fed7aa;
+  --line-blue: #bfdbfe;
+  --line-violet: #ddd6fe;
+  --danger-fill: #c8291d;
+
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05), 0 1px 1px rgba(0, 0, 0, 0.02);
+  --shadow-md: 0 4px 12px -2px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-lg: 0 16px 40px -12px rgba(0, 0, 0, 0.22), 0 2px 6px rgba(0, 0, 0, 0.06);
+  --shadow-brand: inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 1px 2px rgba(52, 52, 168, 0.35);
+  --shadow-card: var(--shadow-sm);
+  --shadow-lift: var(--shadow-md);
+
+  --radius-sm: 6px;
+  --radius: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-hero: 16px;
+
+  --font: 'Geist Variable', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-display: var(--font);
+  --mono: 'Geist Mono Variable', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --canvas: #09090b;
+    --surface: #111113;
+    --surface-2: #18181b;
+    --surface-glass: rgba(17, 17, 19, 0.78);
+
+    --ink-900: #fafafa;
+    --ink-800: #e4e4e7;
+    --ink-700: #d4d4d8;
+    --ink-600: #a1a1aa;
+    --ink-500: #a1a1aa;
+    --ink-400: #71717a;
+    --ink-300: #3f3f46;
+    --ink-200: #27272a;
+    --ink-100: #1c1c1f;
+    --ink-50:  #141416;
+
+    --hairline: rgba(255, 255, 255, 0.08);
+    --hairline-soft: rgba(255, 255, 255, 0.05);
+    --card-line: var(--hairline);
+
+    --brand-50:  #17172e;
+    --brand-100: #1f1f40;
+    --brand-200: #2c2c5c;
+    --brand-ink: #9da0f5;
+    --brand-ink-2: #b4b6f7;
+
+    --tint-sky:     #0f1d33;  --tint-sky-ink:     #93c5fd;
+    --tint-violet:  #1c1633;  --tint-violet-ink:  #c4b5fd;
+    --tint-amber:   #2a1d08;  --tint-amber-ink:   #f5b544;
+    --tint-rose:    #2c1214;  --tint-rose-ink:    #ff8a7a;
+    --tint-teal:    #1b1b33;  --tint-teal-ink:    #9da0f5;
+    --tint-green:   #0c2416;  --tint-green-ink:   #5fd38a;
+
+    --risk-red-soft:   #2c1214;  --risk-red-line:   #e5484d;  --risk-red-ink:   #ff8a7a;
+    --risk-amber-soft: #2a1d08;  --risk-amber-line: #f59e0b;  --risk-amber-ink: #f5b544;
+    --risk-green-soft: #0c2416;  --risk-green-line: #30a46c;  --risk-green-ink: #5fd38a;
+
+    --line-red: #5c1d1d;
+    --line-amber: #5a3d0a;
+    --line-green: #134d2c;
+    --line-sky: #1e3a5f;
+    --line-orange: #5a3d0a;
+    --line-blue: #1e3a5f;
+    --line-violet: #3b2f6b;
+
+    --shadow-xs: none;
+    --shadow-sm: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+    --shadow-md: 0 8px 24px -6px rgba(0, 0, 0, 0.6);
+    --shadow-lg: 0 24px 48px -12px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(255, 255, 255, 0.06);
+    --shadow-card: var(--shadow-sm);
+    --shadow-lift: var(--shadow-md);
+  }
+}
+:root[data-theme='dark'] {
+    --canvas: #09090b;
+    --surface: #111113;
+    --surface-2: #18181b;
+    --surface-glass: rgba(17, 17, 19, 0.78);
+
+    --ink-900: #fafafa;
+    --ink-800: #e4e4e7;
+    --ink-700: #d4d4d8;
+    --ink-600: #a1a1aa;
+    --ink-500: #a1a1aa;
+    --ink-400: #71717a;
+    --ink-300: #3f3f46;
+    --ink-200: #27272a;
+    --ink-100: #1c1c1f;
+    --ink-50:  #141416;
+
+    --hairline: rgba(255, 255, 255, 0.08);
+    --hairline-soft: rgba(255, 255, 255, 0.05);
+    --card-line: var(--hairline);
+
+    --brand-50:  #17172e;
+    --brand-100: #1f1f40;
+    --brand-200: #2c2c5c;
+    --brand-ink: #9da0f5;
+    --brand-ink-2: #b4b6f7;
+
+    --tint-sky:     #0f1d33;  --tint-sky-ink:     #93c5fd;
+    --tint-violet:  #1c1633;  --tint-violet-ink:  #c4b5fd;
+    --tint-amber:   #2a1d08;  --tint-amber-ink:   #f5b544;
+    --tint-rose:    #2c1214;  --tint-rose-ink:    #ff8a7a;
+    --tint-teal:    #1b1b33;  --tint-teal-ink:    #9da0f5;
+    --tint-green:   #0c2416;  --tint-green-ink:   #5fd38a;
+
+    --risk-red-soft:   #2c1214;  --risk-red-line:   #e5484d;  --risk-red-ink:   #ff8a7a;
+    --risk-amber-soft: #2a1d08;  --risk-amber-line: #f59e0b;  --risk-amber-ink: #f5b544;
+    --risk-green-soft: #0c2416;  --risk-green-line: #30a46c;  --risk-green-ink: #5fd38a;
+
+    --line-red: #5c1d1d;
+    --line-amber: #5a3d0a;
+    --line-green: #134d2c;
+    --line-sky: #1e3a5f;
+    --line-orange: #5a3d0a;
+    --line-blue: #1e3a5f;
+    --line-violet: #3b2f6b;
+
+    --shadow-xs: none;
+    --shadow-sm: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+    --shadow-md: 0 8px 24px -6px rgba(0, 0, 0, 0.6);
+    --shadow-lg: 0 24px 48px -12px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(255, 255, 255, 0.06);
+    --shadow-card: var(--shadow-sm);
+    --shadow-lift: var(--shadow-md);
+}
+
+body {
+  font-family: var(--font);
+  background: var(--canvas);
+  color: var(--ink-900);
+  letter-spacing: -0.008em;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3 { font-family: var(--font); letter-spacing: -0.025em; }
+h1 { font-size: 26px; font-weight: 650; }
+h2 { font-size: 18px; font-weight: 600; }
+
+/* ------------------------------------------------------------------ header */
+
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 15;
+  padding: 12px 16px 12px;
+  padding-top: max(12px, env(safe-area-inset-top, 12px));
+  color: var(--ink-900);
+  background: color-mix(in srgb, var(--canvas) 82%, transparent);
+  background-image: none;
+  -webkit-backdrop-filter: saturate(1.5) blur(16px);
+  backdrop-filter: saturate(1.5) blur(16px);
+  border-bottom: 1px solid var(--hairline);
+}
+.app-header__title { font-family: var(--font); font-size: 17px; font-weight: 600; letter-spacing: -0.02em; }
+.app-header__back {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--ink-900);
+  border: 1px solid var(--hairline);
+  box-shadow: var(--shadow-xs);
+}
+.app-header__back:active { background: var(--surface-2); }
+
+.conn {
+  margin-top: 10px;
+  padding: 4px 10px 4px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--hairline);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+}
+/* Calm states are neutral with an accent dot; the two states a CHW must not miss keep colour. */
+.conn--online  { background: var(--surface); color: var(--ink-600); border-color: var(--hairline); }
+.conn--online .conn__dot { color: var(--brand-ink); }
+.conn--syncing { background: var(--brand-50); color: var(--brand-ink); border-color: var(--brand-200); }
+.conn__dot { width: 7px; height: 7px; }
+
+.app-main {
+  margin-top: 0;
+  border-radius: 0;
+  box-shadow: none;
+  padding: 20px 16px 112px;
+  background: var(--canvas);
+}
+
+/* ------------------------------------------------------------------ greeting */
+
+.greeting { font-size: 14px; font-weight: 500; color: var(--ink-500); letter-spacing: -0.01em; }
+.display { font-family: var(--font); font-size: 30px; font-weight: 650; line-height: 1.12; letter-spacing: -0.04em; }
+.display em { font-style: normal; color: var(--brand-ink); }
+
+/* ------------------------------------------------------------------ primary action */
+
+.hero {
+  border-radius: var(--radius-xl);
+  padding: 22px 20px 20px;
+  background-color: var(--brand-700);
+  background-image:
+    radial-gradient(120% 90% at 100% 0%, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0) 55%),
+    linear-gradient(150deg, var(--brand-600) 0%, var(--brand-800) 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 14px 30px -14px rgba(79, 79, 208, 0.65);
+}
+.hero::after { display: none; }
+.hero__label { font-size: 12px; font-weight: 500; letter-spacing: 0; text-transform: none; color: rgba(255, 255, 255, 0.8); }
+.hero__title { font-family: var(--font); font-size: 24px; font-weight: 650; letter-spacing: -0.035em; }
+.hero__sub { font-size: 14.5px; color: rgba(255, 255, 255, 0.85); }
+.hero__cta {
+  margin-top: 18px;
+  padding: 10px 16px;
+  border-radius: 10px;
+  background: #ffffff;
+  color: var(--brand-800);
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+}
+
+/* ------------------------------------------------------------------ buttons and inputs */
+
+.btn {
+  min-height: 52px;
+  border-radius: 12px;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+}
+.btn--primary {
+  color: #ffffff;
+  background-image: none;
+  background-color: var(--brand-700);
+  border: 1px solid var(--brand-800);
+  box-shadow: var(--shadow-brand);
+}
+.btn--primary:active:not(:disabled) { background-image: none; background-color: var(--brand-800); }
+.btn--secondary { background: var(--surface); color: var(--ink-900); border: 1px solid var(--hairline); box-shadow: var(--shadow-xs); }
+.btn--quiet { background: var(--surface-2); color: var(--ink-800); }
+.btn--sm { min-height: 40px; border-radius: 10px; }
+
+.input, .select, .textarea {
+  min-height: 50px;
+  border: 1px solid var(--hairline);
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: var(--shadow-xs);
+}
+.input:focus, .select:focus, .textarea:focus {
+  outline: none;
+  border-color: var(--brand-700);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand-700) 22%, transparent);
+}
+
+.field__label { font-size: 14px; font-weight: 500; letter-spacing: -0.01em; color: var(--ink-800); }
+.field__hint { font-size: 13px; color: var(--ink-500); }
+
+.chip, .pill, .symptom { border-radius: 12px; border: 1px solid var(--hairline); background: var(--surface); box-shadow: var(--shadow-xs); }
+.chip[aria-pressed='true'], .pill[aria-pressed='true'], .symptom[aria-pressed='true'] {
+  border-color: var(--brand-700);
+  box-shadow: 0 0 0 1px var(--brand-700);
+}
+
+.steps__step { height: 4px; border-radius: 999px; }
+.step-label { font-size: 12.5px; font-weight: 500; letter-spacing: 0; text-transform: none; color: var(--ink-500); }
+
+.badge {
+  gap: 6px;
+  padding: 3px 9px;
+  border: none;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.badge::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+/* ------------------------------------------------------------------ tiles */
+
+.section-head { margin: 28px 2px 10px; }
+.section-head h2 { font-size: 17px; }
+.section-head__action { font-weight: 500; }
+
+.stat-grid { gap: 10px; }
+.stat {
+  min-height: 110px;
+  padding: 14px;
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: 14px;
+  box-shadow: var(--shadow-sm);
+}
+.stat--teal, .stat--sky, .stat--violet, .stat--amber, .stat--rose, .stat--green { background: var(--surface); }
+.stat .chip-icon { width: 28px; height: 28px; border-radius: 8px; }
+.stat__value {
+  margin-top: 12px;
+  font-family: var(--font);
+  font-size: 28px;
+  font-weight: 650;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.stat__label { margin-top: 6px; font-size: 13px; font-weight: 500; color: var(--ink-500); text-transform: none; letter-spacing: -0.005em; }
+
+/* ------------------------------------------------------------------ grouped lists */
+
+.list:has(> li > .list__item) {
+  padding: 0;
+  overflow: hidden;
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: 14px;
+  box-shadow: var(--shadow-sm);
+}
+.list:has(> li > .list__item) > li + li .list__item { border-top: 1px solid var(--hairline-soft); }
+.list__item {
+  margin-bottom: 0;
+  padding: 14px;
+  background: var(--surface);
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+/* A lone list item (not inside a grouped list) is its own small card. */
+a.list__item, :not(li) > .list__item {
+  border: 1px solid var(--hairline);
+  border-radius: 14px;
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 10px;
+}
+.list > li > a.list__item { border: none; border-radius: 0; box-shadow: none; margin-bottom: 0; }
+.list__item:active { background: var(--surface-2); transform: none; }
+.list__avatar { border-radius: 50%; background: var(--brand-100); color: var(--brand-ink); font-weight: 600; font-size: 15px; }
+.list__title { font-weight: 600; letter-spacing: -0.02em; }
+.list__meta { font-size: 13px; color: var(--ink-500); }
+
+.card {
+  padding: 16px;
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: 14px;
+  box-shadow: var(--shadow-sm);
+}
+.card--tint { background: var(--brand-50); border-color: var(--brand-200); box-shadow: none; }
+.card__label { font-size: 12.5px; font-weight: 500; letter-spacing: 0; text-transform: none; color: var(--ink-500); }
+
+.empty__glyph { border-radius: 16px; background: var(--brand-50); color: var(--brand-ink); }
+
+/* ------------------------------------------------------------------ tab bar */
+
+.app-nav {
+  left: 0;
+  right: 0;
+  bottom: 0;
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 4px 6px max(6px, env(safe-area-inset-bottom, 6px));
+  border: none;
+  border-top: 1px solid var(--hairline);
+  border-radius: 0;
+  background: color-mix(in srgb, var(--surface) 80%, transparent);
+  -webkit-backdrop-filter: saturate(1.6) blur(18px);
+  backdrop-filter: saturate(1.6) blur(18px);
+  box-shadow: none;
+}
+.app-nav a { min-height: 54px; border-radius: 10px; font-size: 11.5px; font-weight: 500; color: var(--ink-500); }
+.app-nav a[aria-current='page'] { background: transparent; color: var(--brand-ink); }
+
+/* ------------------------------------------------------------------ PIN pad */
+
+.pin__key {
+  border-radius: 16px;
+  border: 1px solid var(--hairline);
+  background: var(--surface);
+  box-shadow: var(--shadow-xs);
+  font-family: var(--font);
+  font-size: 26px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+.pin__key:active { background: var(--surface-2); }
+
+/* ------------------------------------------------------------------ the verdict */
+
+.result {
+  border: none;
+  border-radius: 20px;
+  background: var(--surface);
+  box-shadow: 0 0 0 1px var(--hairline), var(--shadow-md);
+}
+.result__banner { padding: 30px 20px 28px; }
+.result__mark { width: 56px; height: 56px; border-width: 1.5px; }
+.result__level {
+  font-family: var(--font);
+  font-size: 60px;
+  font-weight: 750;
+  letter-spacing: -0.05em;
+  line-height: 0.95;
+}
+.result__headline { margin-top: 10px; font-size: 15px; font-weight: 600; letter-spacing: 0; text-transform: none; opacity: 0.92; }
+.result__section-label { font-size: 12.5px; font-weight: 500; letter-spacing: 0; text-transform: none; color: var(--ink-500); }
+.result__action {
+  border: 1px solid;
+  border-left-width: 1px;
+  border-radius: 12px;
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+}
+.result--RED   .result__action { border-color: var(--line-red); }
+.result--AMBER .result__action { border-color: var(--line-amber); }
+.result--GREEN .result__action { border-color: var(--line-green); }
+
+.disclaimer { border-radius: 12px; }
+
+/* Codes read as codes. */
+.code, .mono { font-family: var(--mono); letter-spacing: 0; }
+
+/* ------------------------------------------------------------------ sign in, setup and unlock */
+
+/* One centred column at full height: brand at the top, the task in the middle, the security
+   note pinned to the bottom. No header slab, so the first screen a VHT sees is the product. */
+.auth {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  max-width: 420px;
+  margin: 0 auto;
+  padding: max(28px, env(safe-area-inset-top)) 20px max(20px, env(safe-area-inset-bottom));
+  background: var(--canvas);
+}
+
+.auth__brand { display: flex; align-items: center; gap: 12px; animation: rise 0.34s var(--ease-out) both; }
+.auth__mark {
+  width: 40px;
+  height: 40px;
+  flex: none;
+  color: var(--brand-700);
+  border-radius: 11px;
+  box-shadow: var(--shadow-brand);
+}
+.auth__name { font-size: 18px; font-weight: 650; letter-spacing: -0.03em; color: var(--ink-900); line-height: 1.15; }
+.auth__tag { font-size: 13px; color: var(--ink-500); }
+
+.auth__body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 32px 0 24px;
+  animation: rise 0.34s var(--ease-out) 0.05s both;
+}
+.auth__body.pin, .auth__body > .pin { max-width: 330px; width: 100%; margin: 0 auto; }
+
+.auth__title {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 650;
+  line-height: 1.15;
+  letter-spacing: -0.04em;
+  color: var(--ink-900);
+}
+.auth__sub { margin: 8px 0 20px; font-size: 15px; line-height: 1.5; color: var(--ink-500); }
+.pin .auth__title, .pin .auth__sub { text-align: center; }
+.pin .pin__dots { margin: 8px 0 28px; }
+
+/* Connection pop-up, a floating pill: round status badge, bold title, quiet second line.
+   The surface stays neutral; only the badge carries colour (amber offline, iris online).
+   Offline it expands on tap to explain why setup needs a connection. */
+.toast {
+  position: fixed;
+  z-index: 50;
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% - 24px);
+  max-width: 396px;
+  border: 1px solid var(--hairline);
+  border-radius: 30px;
+  background: var(--surface);
+  box-shadow: var(--shadow-lg);
+  color: var(--ink-900);
+  overflow: hidden;
+  animation: toast-in 0.3s var(--ease-out) both;
+}
+.toast--open { border-radius: 24px; }
+.toast__row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 9px 16px 9px 9px;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.toast--online .toast__row { cursor: default; }
+.toast__row:focus-visible { outline: 2px solid var(--brand-500); outline-offset: -2px; border-radius: 30px; }
+.toast__badge {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  flex: none;
+  border-radius: 50%;
+}
+.toast--offline .toast__badge { background: rgba(245, 158, 11, 0.18); color: var(--tint-amber-ink); }
+.toast--online .toast__badge { background: var(--brand-100); color: var(--brand-ink); }
+.toast__text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.toast__title { font-size: 16px; font-weight: 650; letter-spacing: -0.02em; line-height: 1.25; }
+.toast__sub { font-size: 14px; color: var(--ink-500); line-height: 1.35; font-variant-numeric: tabular-nums; }
+.toast__chevron { flex: none; color: var(--ink-500); transition: transform 0.2s var(--ease-out); }
+.toast--open .toast__chevron { transform: rotate(180deg); }
+.toast__more { padding: 2px 18px 16px 67px; }
+.toast__more p { margin: 0 0 10px; font-size: 14px; line-height: 1.45; color: var(--ink-600); }
+.toast__dismiss {
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid var(--hairline);
+  border-radius: 999px;
+  background: var(--surface-2);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink-800);
+  cursor: pointer;
+}
+.toast__dismiss:focus-visible { outline: 2px solid var(--brand-500); }
+.toast--top { top: max(12px, env(safe-area-inset-top)); }
+.toast--bottom { bottom: max(16px, env(safe-area-inset-bottom)); }
+/* Clear of the bottom navigation, so it never covers a screen's title or back button. */
+.toast--above-nav { bottom: calc(78px + env(safe-area-inset-bottom, 0px)); }
+.toast--bottom, .toast--above-nav { animation-name: toast-up; }
+/* While a pill stays up, leave room so the last item on the page can scroll clear of it. */
+.app:has(.toast--above-nav) .app-main, .app:has(.toast--bottom) .app-main { padding-bottom: 184px; }
+
+.toast--syncing .toast__badge { background: var(--brand-100); color: var(--brand-ink); }
+.toast--error .toast__badge { background: rgba(229, 72, 77, 0.16); color: var(--risk-red-ink); }
+.toast__spin { animation: toast-spin 1.1s linear infinite; }
+.toast__actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.toast__dismiss--primary { background: var(--brand-700); border-color: var(--brand-800); color: #ffffff; }
+@keyframes toast-spin { to { transform: rotate(360deg); } }
+@keyframes toast-up {
+  from { opacity: 0; transform: translate(-50%, 12px); }
+  to   { opacity: 1; transform: translate(-50%, 0); }
+}
+@keyframes toast-in {
+  from { opacity: 0; transform: translate(-50%, -12px); }
+  to   { opacity: 1; transform: translate(-50%, 0); }
+}
+
+
+/* Password with an inline Show / Hide control that keeps a 44px touch target. */
+.input-wrap { position: relative; }
+.input-wrap .input { padding-right: 72px; }
+.input-wrap__toggle {
+  position: absolute;
+  top: 50%;
+  right: 6px;
+  transform: translateY(-50%);
+  min-width: 56px;
+  min-height: 40px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--brand-ink);
+  cursor: pointer;
+}
+.input-wrap__toggle:focus-visible { outline: 2px solid var(--brand-500); outline-offset: 0; }
+
+.auth__back {
+  align-self: center;
+  margin-top: 12px;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 14.5px;
+  font-weight: 500;
+  color: var(--ink-600);
+  cursor: pointer;
+}
+.auth__back:focus-visible { outline: 2px solid var(--brand-500); border-radius: 8px; }
+
+.auth__foot {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  max-width: 320px;
+  margin: 0 auto;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--ink-500);
+}
+.auth__foot svg { flex: none; margin-top: 2px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .auth__brand, .auth__body, .toast, .toast__spin { animation: none; }
+}

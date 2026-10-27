@@ -1,0 +1,37 @@
+{
+  // Use the TypeScript from node_modules (5.9), not the one bundled with VS Code.
+  // The build relies on newer options such as `erasableSyntaxOnly` and
+  // `rewriteRelativeImportExtensions`, which an older bundled compiler flags as errors.
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "typescript.enablePromptUseWorkspaceTsdk": true,
+
+  // Imports in this repo carry explicit .ts extensions, because the API is run by Node
+  // with native type stripping rather than being compiled first.
+  "typescript.preferences.importModuleSpecifierEnding": "js",
+  "javascript.preferences.importModuleSpecifierEnding": "js",
+
+  "editor.formatOnSave": false,
+  "editor.tabSize": 2,
+  "files.eol": "\n",
+  "files.trimTrailingWhitespace": true,
+  "files.insertFinalNewline": true,
+
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/dist": true,
+    "**/data": true,
+    "**/package-lock.json": true
+  },
+
+  "files.watcherExclude": {
+    "**/node_modules/**": true,
+    "**/dist/**": true,
+    "**/data/**": true
+  },
+
+  // The SQLite file is binary; opening it by accident is never useful.
+  "files.associations": { "*.db": "plaintext" },
+
+  "[typescript]": { "editor.defaultFormatter": "vscode.typescript-language-features" },
+  "[typescriptreact]": { "editor.defaultFormatter": "vscode.typescript-language-features" }
+}

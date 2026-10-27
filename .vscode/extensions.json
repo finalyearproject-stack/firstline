@@ -1,0 +1,9 @@
+{
+  "recommendations": [
+    "humao.rest-client",
+    "qwtel.sqlite-viewer",
+    "vitest.explorer",
+    "dbaeumer.vscode-eslint"
+  ],
+  "unwantedRecommendations": []
+}

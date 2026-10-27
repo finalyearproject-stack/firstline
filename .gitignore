@@ -1,0 +1,23 @@
+node_modules/
+dist/
+data/
+*.db
+*.db-wal
+*.db-shm
+.env
+.env.local
+.env.*.local
+*.log
+.DS_Store
+Thumbs.db
+coverage/
+.vite/
+*.tsbuildinfo
+
+# Report and proposal documents are kept outside the code repository.
+*.docx
+~$*
+
+# Local tool state.
+**/.claude/autoharness/
+.claude/settings.local.json

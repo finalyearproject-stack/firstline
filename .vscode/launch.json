@@ -1,0 +1,89 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      // Breakpoints work directly in the .ts files. Node strips types by replacing them
+      // with whitespace rather than recompiling, so line numbers are preserved 1:1 and
+      // no source map is involved.
+      "name": "Debug API",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/apps/api/src/server.ts",
+      "runtimeArgs": ["--experimental-strip-types"],
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "NODE_ENV": "development",
+        "PORT": "4000",
+        "JWT_SECRET": "local-development-secret-not-for-production-use"
+      },
+      "console": "integratedTerminal",
+      "skipFiles": ["<node_internals>/**"],
+      "restart": true
+    },
+    {
+      "name": "Debug tests (all)",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/node_modules/vitest/vitest.mjs",
+      "args": ["run"],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "skipFiles": ["<node_internals>/**"]
+    },
+    {
+      // Put the cursor in a test file and run this to debug only that file.
+      "name": "Debug tests (current file)",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/node_modules/vitest/vitest.mjs",
+      "args": ["run", "${relativeFile}"],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "skipFiles": ["<node_internals>/**"]
+    },
+    {
+      "name": "Debug seeder",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/apps/api/src/db/seed.ts",
+      "runtimeArgs": ["--experimental-strip-types"],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "skipFiles": ["<node_internals>/**"]
+    },
+
+    {
+      "name": "Open CHW app",
+      "type": "chrome",
+      "request": "launch",
+      "url": "http://localhost:5173",
+      "webRoot": "${workspaceFolder}/apps/chw/src"
+    },
+    {
+      "name": "Open Dashboard",
+      "type": "chrome",
+      "request": "launch",
+      "url": "http://localhost:5174",
+      "webRoot": "${workspaceFolder}/apps/dashboard/src"
+    },
+    {
+      "name": "Open Public portal",
+      "type": "chrome",
+      "request": "launch",
+      "url": "http://localhost:5175",
+      "webRoot": "${workspaceFolder}/apps/public/src"
+    }
+  ],
+
+  "compounds": [
+    {
+      // Starts the three web clients, then launches the API under the debugger.
+      // The API is NOT in the task list: this config starts it, and two copies would
+      // collide on port 4000.
+      "name": "▶ Run everything (API + all three clients)",
+      "configurations": ["Debug API"],
+      "preLaunchTask": "Start clients only",
+      "stopAll": true
+    }
+  ]
+}

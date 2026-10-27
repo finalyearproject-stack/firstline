@@ -1,0 +1,217 @@
+# API scratch file for the VS Code REST Client extension (humao.rest-client).
+#
+# Click "Send Request" above any block. Run the login block first: the token is captured
+# into a variable the later blocks reuse.
+#
+# Requires the API to be running (Run Task -> "API", or F5 -> "Debug API").
+
+@host = http://localhost:4000
+@password = DemoPass2026
+
+###############################################################################
+# 1. Sign in — run one of these first
+###############################################################################
+
+# @name loginChw
+POST {{host}}/api/v1/auth/login
+Content-Type: application/json
+
+{ "username": "chw1", "password": "{{password}}" }
+
+###
+
+# @name loginNurse
+POST {{host}}/api/v1/auth/login
+Content-Type: application/json
+
+{ "username": "nurse", "password": "{{password}}" }
+
+###
+
+# @name loginOfficer
+POST {{host}}/api/v1/auth/login
+Content-Type: application/json
+
+{ "username": "officer", "password": "{{password}}" }
+
+###
+
+# @name loginAdmin
+POST {{host}}/api/v1/auth/login
+Content-Type: application/json
+
+{ "username": "admin", "password": "{{password}}" }
+
+###
+
+@chw = {{loginChw.response.body.token}}
+@nurse = {{loginNurse.response.body.token}}
+@officer = {{loginOfficer.response.body.token}}
+@admin = {{loginAdmin.response.body.token}}
+
+###############################################################################
+# 2. Patients  (CHW sees only their own)
+###############################################################################
+
+GET {{host}}/api/v1/patients?pageSize=5
+Authorization: Bearer {{chw}}
+
+###
+
+GET {{host}}/api/v1/patients?search=sarah
+Authorization: Bearer {{chw}}
+
+###
+
+# @name createPatient
+POST {{host}}/api/v1/patients
+Authorization: Bearer {{chw}}
+Content-Type: application/json
+
+{
+  "localId": "P-TEST",
+  "firstName": "Test",
+  "lastName": "Patient",
+  "age": 52,
+  "sex": "FEMALE",
+  "village": "Kasangati",
+  "phone": "+256772000000",
+  "consentStatus": "GRANTED"
+}
+
+###
+
+GET {{host}}/api/v1/patients/{{createPatient.response.body.data.id}}/visits
+Authorization: Bearer {{chw}}
+
+###############################################################################
+# 3. Triage — the specification's worked example
+#
+# The CHW app does NOT call this; it runs the identical engine locally and offline.
+# This endpoint exists so the two implementations can be shown to agree.
+###############################################################################
+
+POST {{host}}/api/v1/triage
+Authorization: Bearer {{chw}}
+Content-Type: application/json
+
+{
+  "age": 52,
+  "systolicBp": 165,
+  "diastolicBp": 100,
+  "symptoms": [{ "symptomCode": "headache", "severity": "MODERATE", "durationDays": 3 }]
+}
+
+###
+
+GET {{host}}/api/v1/triage/ruleset
+Authorization: Bearer {{chw}}
+
+###############################################################################
+# 4. Synchronisation — send this TWICE to see idempotency
+#
+# The second send returns "DUPLICATE" and stores nothing new.
+###############################################################################
+
+POST {{host}}/api/v1/sync
+Authorization: Bearer {{chw}}
+Content-Type: application/json
+
+{
+  "clientTime": "2026-09-18T08:05:12.000Z",
+  "items": [
+    {
+      "entityType": "patient",
+      "entityId": "11111111-1111-4111-8111-111111111111",
+      "operation": "CREATE",
+      "idempotencyKey": "patient:11111111-1111-4111-8111-111111111111:CREATE:1",
+      "payload": {
+        "id": "11111111-1111-4111-8111-111111111111",
+        "localId": "P-SYNC1",
+        "firstName": "Sync",
+        "lastName": "Example",
+        "age": 44,
+        "sex": "MALE",
+        "village": "Kasangati",
+        "phone": null,
+        "consentStatus": "GRANTED",
+        "createdBy": "{{loginChw.response.body.user.id}}",
+        "createdAt": "2026-09-18T07:40:00.000Z",
+        "updatedAt": "2026-09-18T07:40:00.000Z",
+        "version": 1
+      }
+    }
+  ]
+}
+
+###
+
+GET {{host}}/api/v1/sync/status
+Authorization: Bearer {{chw}}
+
+###############################################################################
+# 5. Dashboard  (aggregate only — an official can reach all of these)
+###############################################################################
+
+GET {{host}}/api/v1/dashboard/overview
+Authorization: Bearer {{officer}}
+
+###
+
+GET {{host}}/api/v1/dashboard/villages
+Authorization: Bearer {{officer}}
+
+###
+
+GET {{host}}/api/v1/dashboard/alerts
+Authorization: Bearer {{officer}}
+
+###
+
+# The privacy boundary — this must return 403.
+GET {{host}}/api/v1/patients
+Authorization: Bearer {{officer}}
+
+###############################################################################
+# 6. Referrals
+###############################################################################
+
+GET {{host}}/api/v1/referrals?status=PENDING&urgency=IMMEDIATE
+Authorization: Bearer {{nurse}}
+
+###############################################################################
+# 7. Admin
+###############################################################################
+
+GET {{host}}/api/v1/users
+Authorization: Bearer {{admin}}
+
+###
+
+GET {{host}}/api/v1/audit?pageSize=10
+Authorization: Bearer {{admin}}
+
+###############################################################################
+# 8. District symptom trends
+###############################################################################
+
+# What is rising against the previous equal-length window. Symptoms, not diagnoses.
+GET {{host}}/api/v1/dashboard/symptom-trends?days=30
+Authorization: Bearer {{officer}}
+
+###
+
+# Village counts below the reporting threshold are withheld and counted in
+# `villagesSuppressed` rather than shown, so a rare symptom cannot single out a household.
+GET {{host}}/api/v1/dashboard/symptom-trends?days=90
+Authorization: Bearer {{nurse}}
+
+###############################################################################
+# 9. Health probes (no auth)
+###############################################################################
+
+GET {{host}}/health
+
+###
+
+GET {{host}}/ready

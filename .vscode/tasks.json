@@ -1,0 +1,130 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Setup: install dependencies",
+      "type": "shell",
+      "command": "npm install",
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "panel": "dedicated", "group": "setup" }
+    },
+    {
+      "label": "Setup: create database + demo data",
+      "type": "shell",
+      "command": "npm run seed",
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "panel": "dedicated", "group": "setup" },
+      "detail": "Runs migrations and loads the fictional demo dataset. Safe to re-run."
+    },
+
+    {
+      "label": "API",
+      "type": "shell",
+      "command": "npm run dev:api",
+      "isBackground": true,
+      "presentation": { "reveal": "always", "panel": "dedicated", "group": "servers" },
+      "problemMatcher": {
+        "pattern": { "regexp": "^$" },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": ".*\\[db\\].*",
+          "endsPattern": ".*listening on.*"
+        }
+      }
+    },
+    {
+      "label": "CHW app",
+      "type": "shell",
+      "command": "npm run dev:chw",
+      "isBackground": true,
+      "presentation": { "reveal": "always", "panel": "dedicated", "group": "servers" },
+      "problemMatcher": {
+        "pattern": { "regexp": "^$" },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": ".*VITE.*",
+          "endsPattern": ".*ready in.*"
+        }
+      }
+    },
+    {
+      "label": "Dashboard",
+      "type": "shell",
+      "command": "npm run dev:dashboard",
+      "isBackground": true,
+      "presentation": { "reveal": "always", "panel": "dedicated", "group": "servers" },
+      "problemMatcher": {
+        "pattern": { "regexp": "^$" },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": ".*VITE.*",
+          "endsPattern": ".*ready in.*"
+        }
+      }
+    },
+    {
+      "label": "Public portal",
+      "type": "shell",
+      "command": "npm run dev:public",
+      "isBackground": true,
+      "presentation": { "reveal": "always", "panel": "dedicated", "group": "servers" },
+      "problemMatcher": {
+        "pattern": { "regexp": "^$" },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": ".*VITE.*",
+          "endsPattern": ".*ready in.*"
+        }
+      }
+    },
+
+    {
+      "label": "▶ Start everything",
+      "dependsOrder": "parallel",
+      "dependsOn": ["API", "CHW app", "Dashboard", "Public portal"],
+      "problemMatcher": [],
+      "group": { "kind": "build", "isDefault": true },
+      "detail": "Starts all four servers, each in its own terminal tab."
+    },
+
+    {
+      "label": "Start clients only",
+      "dependsOrder": "parallel",
+      "dependsOn": ["CHW app", "Dashboard", "Public portal"],
+      "problemMatcher": [],
+      "detail": "The three web clients, without the API. Used by the debug compound, which starts the API under the debugger itself."
+    },
+
+    {
+      "label": "Test",
+      "type": "shell",
+      "command": "npm test",
+      "group": { "kind": "test", "isDefault": true },
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "panel": "dedicated", "group": "checks" }
+    },
+    {
+      "label": "Test: watch",
+      "type": "shell",
+      "command": "npm run test:watch",
+      "isBackground": true,
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "panel": "dedicated", "group": "checks" }
+    },
+    {
+      "label": "Typecheck (all workspaces)",
+      "type": "shell",
+      "command": "npx tsc -b && cd apps/chw && npx tsc -b && cd ../dashboard && npx tsc -b && cd ../public && npx tsc -b",
+      "problemMatcher": ["$tsc"],
+      "presentation": { "reveal": "always", "panel": "dedicated", "group": "checks" }
+    },
+    {
+      "label": "Reset demo data",
+      "type": "shell",
+      "command": "npm run demo:reset",
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "panel": "dedicated", "group": "setup" },
+      "detail": "Deletes every DEMO- record and reseeds an identical set."
+    }
+  ]
+}

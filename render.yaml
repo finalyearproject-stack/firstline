@@ -1,0 +1,42 @@
+# Render Blueprint: one web service (API + VHT app + dashboard) and one PostgreSQL database.
+#
+#   https://<service>.onrender.com/            VHT app (installable PWA)
+#   https://<service>.onrender.com/dashboard   facility dashboard
+#   https://<service>.onrender.com/api/v1      API
+#
+# Free plan: the service sleeps after ~15 minutes idle (the next visit takes ~1 minute to
+# wake) and the free database expires after 30 days. Fine for a demonstration.
+services:
+  - type: web
+    name: firstline
+    runtime: node
+    plan: free
+    # NODE_ENV=production would make npm skip the build tools, so include them explicitly.
+    buildCommand: npm ci --include=dev && npm run build:clients
+    startCommand: node --experimental-strip-types apps/api/src/server.ts
+    healthCheckPath: /ready
+    envVars:
+      - key: NODE_VERSION
+        value: "24"
+      - key: NODE_ENV
+        value: production
+      - key: SERVE_CLIENTS
+        value: "true"
+      - key: DASHBOARD_BASE
+        value: /dashboard/
+      # Seeds the FICTIONAL demo accounts and records on the first start only (when the
+      # database has no users). Remove it for any real deployment.
+      - key: SEED_DEMO
+        value: "true"
+      - key: DB_DIALECT
+        value: postgres
+      - key: DATABASE_URL
+        fromDatabase:
+          name: firstline-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+
+databases:
+  - name: firstline-db
+    plan: free
