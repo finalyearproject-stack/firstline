@@ -24,6 +24,9 @@ services:
         value: "true"
       - key: DASHBOARD_BASE
         value: /dashboard/
+      # Shows "Open the dashboard" on the VHT sign-in screen.
+      - key: VITE_DASHBOARD_URL
+        value: /dashboard/
       # Seeds the FICTIONAL demo accounts and records on the first start only (when the
       # database has no users). Remove it for any real deployment.
       - key: SEED_DEMO

@@ -1962,6 +1962,24 @@ a.list__item, :not(li) > .list__item {
 }
 .auth__back:focus-visible { outline: 2px solid var(--brand-500); border-radius: 8px; }
 
+.auth__staff {
+  align-self: center;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  margin-bottom: 12px;
+  padding: 0 14px;
+  border: 1px solid var(--hairline);
+  border-radius: 999px;
+  background: var(--surface);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink-700);
+  text-decoration: none;
+}
+.auth__staff:focus-visible { outline: 2px solid var(--brand-500); outline-offset: 2px; }
+
 .auth__foot {
   display: flex;
   align-items: flex-start;

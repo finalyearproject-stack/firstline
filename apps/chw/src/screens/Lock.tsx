@@ -7,12 +7,20 @@
  */
 import { useEffect, useRef, useState } from 'react';
 import { Alert, StatusPill, Steps, whenLabel } from '../components/shell.tsx';
-import { IconCloud, IconCloudOff, IconLock } from '../components/icons.tsx';
+import { IconArrowRight, IconCloud, IconCloudOff, IconLock } from '../components/icons.tsx';
 import { ATTEMPT_LIMIT, useSession } from '../state/session.tsx';
 import { useOnline } from '../state/sync.tsx';
 import { pinProblems } from '../db/crypto.ts';
 
 const PIN_MAX = 12;
+
+/**
+ * Set at build time only where the dashboard is hosted next to this app (see render.yaml),
+ * so the link never points at a page that does not exist. In development the dashboard
+ * runs on its own port.
+ */
+const DASHBOARD_URL: string | undefined =
+  import.meta.env.VITE_DASHBOARD_URL ?? (import.meta.env.DEV ? 'http://localhost:5174/' : undefined);
 
 function Brand() {
   return (
@@ -349,6 +357,13 @@ export function SetupScreen() {
           </div>
         )}
       </div>
+
+      {DASHBOARD_URL && step === 'account' && (
+        <a className="auth__staff" href={DASHBOARD_URL}>
+          Health facility staff? Open the dashboard
+          <IconArrowRight size={16} />
+        </a>
+      )}
 
       <SecurityNote>
         Your PIN is never stored. If you forget it, your supervisor will set the phone up again.
