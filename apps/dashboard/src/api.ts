@@ -154,6 +154,8 @@ export interface SymptomTrend {
   redShare: number;
   villages: Array<{ village: string; count: number }>;
   villagesSuppressed: number;
+  series: Array<{ start: string; current: number; previous: number }>;
+  seriesUnit: 'day' | 'week' | 'month';
 }
 
 export interface VillageStat {

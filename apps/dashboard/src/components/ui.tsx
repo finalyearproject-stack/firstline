@@ -560,6 +560,7 @@ export function Kpi({
   seriesLabel,
   previous,
   previousLabel = 'vs previous period',
+  share,
 }: {
   label: string;
   value: number | string;
@@ -576,11 +577,17 @@ export function Kpi({
   /** The same figure for the preceding window, when the API provides one. */
   previous?: number;
   previousLabel?: string;
+  /**
+   * Draws the figure as a share of a whole (e.g. urgent results out of all screenings)
+   * instead of a daily line. Outcome counts move with screening volume, so their daily
+   * lines all trace the same shape; the share is what actually differs between them.
+   */
+  share?: { of: number; previousOf?: number; noun: string };
 }) {
   const primary = size === 'primary';
   const days = series ? activeDays(series) : 0;
-  const showChart = primary && series !== undefined && days >= MIN_ACTIVE_DAYS;
-  const showNote = primary && series !== undefined && days < MIN_ACTIVE_DAYS;
+  const showChart = primary && !share && series !== undefined && days >= MIN_ACTIVE_DAYS;
+  const showNote = primary && !share && series !== undefined && days < MIN_ACTIVE_DAYS;
   const change = typeof value === 'number' && previous !== undefined ? describeChange(value, previous) : null;
 
   return (
@@ -607,6 +614,48 @@ export function Kpi({
         </div>
       )}
       {showNote && <div className="kpi__sparse">{sparseSummary(series, seriesDates)}</div>}
+      {primary && share && typeof value === 'number' && (
+        <ShareMeter value={value} of={share.of} previous={previous} previousOf={share.previousOf} noun={share.noun} />
+      )}
+    </div>
+  );
+}
+
+function percent(part: number, whole: number | undefined): number | null {
+  return whole ? Math.round((part / whole) * 100) : null;
+}
+
+/** A bar filled to this period's share, with a tick at the preceding period's share. */
+function ShareMeter({
+  value,
+  of,
+  previous,
+  previousOf,
+  noun,
+}: {
+  value: number;
+  of: number;
+  previous?: number;
+  previousOf?: number;
+  noun: string;
+}) {
+  const now = percent(value, of) ?? 0;
+  const before = previous !== undefined ? percent(previous, previousOf) : null;
+
+  return (
+    <div className="kpi__spark kpi__share">
+      <div
+        className="share__track"
+        role="img"
+        aria-label={`${now}% of ${noun}${before !== null ? `, compared with ${before}% in the previous period` : ''}`}
+      >
+        <div className="share__fill" style={{ width: `${now}%` }} />
+        {before !== null && <div className="share__mark" style={{ left: `${before}%` }} />}
+      </div>
+      <div className="share__caption">
+        <strong>{now}%</strong> of {noun}
+        {before !== null && <span className="muted"> · was {before}%</span>}
+      </div>
     </div>
   );
 }

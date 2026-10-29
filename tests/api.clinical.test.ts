@@ -459,6 +459,39 @@ describe('dashboard analytics and the privacy boundary (spec s14, s18)', () => {
     expect(response.body.data.byCategory.find((c: { category: string }) => c.category === 'HTN')).toBeTruthy();
   });
 
+  it('gives each symptom a time series that adds up to its total', async () => {
+    const patient = await request(ctx.app).post('/api/v1/patients').set(bearer(chwToken))
+      .send(buildPatient(chw.id, { village: 'Kasangati' })).expect(201);
+    const visit = buildVisit(patient.body.data.id, chw.id, { village: 'Kasangati' });
+    await request(ctx.app).post('/api/v1/visits').set(bearer(chwToken))
+      .send({
+        visit,
+        vitals: buildVitals(visit.id),
+        symptoms: [buildSymptom(visit.id)],
+        triage: buildTriage(visit.id),
+      })
+      .expect(201);
+
+    const response = await request(ctx.app)
+      .get('/api/v1/dashboard/symptom-trends?days=30')
+      .set(bearer(officerToken))
+      .expect(200);
+
+    expect(response.body.data.length).toBeGreaterThan(0);
+    for (const trend of response.body.data as Array<{
+      current: number;
+      previous: number;
+      seriesUnit: string;
+      series: Array<{ start: string; current: number; previous: number }>;
+    }>) {
+      // 30 days is bucketed by week; the buckets must account for every occurrence.
+      expect(trend.seriesUnit).toBe('week');
+      expect(trend.series).toHaveLength(5);
+      expect(trend.series.reduce((sum, point) => sum + point.current, 0)).toBe(trend.current);
+      expect(trend.series.reduce((sum, point) => sum + point.previous, 0)).toBe(trend.previous);
+    }
+  });
+
   it('reports CHW activity', async () => {
     const response = await request(ctx.app)
       .get('/api/v1/dashboard/chws')

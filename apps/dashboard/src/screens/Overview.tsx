@@ -160,6 +160,7 @@ export function OverviewScreen() {
               meta="need referral"
               series={trendSeries.red}
               seriesLabel={`urgent results per day over the last ${days} days`}
+              share={{ of: overview.data.totalVisits, previousOf: overview.data.previous.totalVisits, noun: 'screenings' }}
             />
             <Kpi
               label="Follow-up"
@@ -172,6 +173,7 @@ export function OverviewScreen() {
               tone="amber"
               series={trendSeries.amber}
               seriesLabel={`follow-up results per day over the last ${days} days`}
+              share={{ of: overview.data.totalVisits, previousOf: overview.data.previous.totalVisits, noun: 'screenings' }}
             />
             <Kpi
               label="No danger signs"
@@ -184,6 +186,7 @@ export function OverviewScreen() {
               tone="green"
               series={trendSeries.green}
               seriesLabel={`screenings with no danger signs per day over the last ${days} days`}
+              share={{ of: overview.data.totalVisits, previousOf: overview.data.previous.totalVisits, noun: 'screenings' }}
             />
           </div>
 

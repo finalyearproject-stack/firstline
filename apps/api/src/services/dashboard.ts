@@ -547,6 +547,13 @@ export interface SymptomTrend {
   villages: Array<{ village: string; count: number }>;
   /** Villages omitted from the list above because they fell under the threshold. */
   villagesSuppressed: number;
+  /**
+   * Occurrences per bucket across the window (days for up to 14 days, weeks up to 120,
+   * otherwise 30-day months), oldest first, beside the same bucket of the preceding window.
+   * District totals only: no village appears here, so no small-cell rule is needed.
+   */
+  series: Array<{ start: string; current: number; previous: number }>;
+  seriesUnit: 'day' | 'week' | 'month';
 }
 
 interface SymptomRow {
@@ -555,13 +562,14 @@ interface SymptomRow {
   severity: string;
   village: string;
   risk_level: string | null;
+  visit_date: string;
 }
 
 /** Occurrences joined to their visit's village and triage outcome, for one window. */
 async function symptomRows(db: Db, from: string, to: string, village?: string | null): Promise<SymptomRow[]> {
   const v = villageClause(village, 'v.village');
   return db.all<SymptomRow>(
-    'SELECT s.symptom_code, s.symptom_name, s.severity, v.village, t.risk_level' +
+    'SELECT s.symptom_code, s.symptom_name, s.severity, v.village, t.risk_level, v.visit_date' +
       ' FROM symptoms s' +
       ' JOIN visits v ON v.id = s.visit_id' +
       ' LEFT JOIN triage_results t ON t.visit_id = s.visit_id' +
@@ -593,9 +601,25 @@ export async function getSymptomTrends(db: Db, filters: Filters): Promise<Sympto
     symptomRows(db, prevFrom, prevTo, filters.village),
   ]);
 
+  const from = Date.parse(filters.from);
+  const spanDays = span / 86_400_000;
+  const seriesUnit: SymptomTrend['seriesUnit'] = spanDays <= 14 ? 'day' : spanDays <= 120 ? 'week' : 'month';
+  const bucketMs = { day: 1, week: 7, month: 30 }[seriesUnit] * 86_400_000;
+  const buckets = Math.max(1, Math.ceil(span / bucketMs));
+  const bucketOf = (at: string, start: number) =>
+    Math.min(buckets - 1, Math.max(0, Math.floor((Date.parse(at) - start) / bucketMs)));
+  const emptySeries = () => Array.from({ length: buckets }, () => ({ current: 0, previous: 0 }));
+  const seriesByCode = new Map<string, Array<{ current: number; previous: number }>>();
+  const seriesFor = (code: string) => {
+    let series = seriesByCode.get(code);
+    if (!series) seriesByCode.set(code, (series = emptySeries()));
+    return series;
+  };
+
   const previousCounts = new Map<string, number>();
   for (const r of before) {
     previousCounts.set(r.symptom_code, (previousCounts.get(r.symptom_code) ?? 0) + 1);
+    seriesFor(r.symptom_code)[bucketOf(r.visit_date, Date.parse(prevFrom))].previous += 1;
   }
 
   interface Acc {
@@ -617,6 +641,7 @@ export async function getSymptomTrends(db: Db, filters: Filters): Promise<Sympto
     if (r.severity === 'SEVERE') entry.severe += 1;
     if (r.risk_level === 'RED') entry.red += 1;
     entry.villages.set(r.village, (entry.villages.get(r.village) ?? 0) + 1);
+    seriesFor(r.symptom_code)[bucketOf(r.visit_date, from)].current += 1;
   }
 
   const trends: SymptomTrend[] = [];
@@ -642,6 +667,11 @@ export async function getSymptomTrends(db: Db, filters: Filters): Promise<Sympto
       redShare: entry.total === 0 ? 0 : Math.round((entry.red / entry.total) * 100) / 100,
       villages,
       villagesSuppressed: entry.villages.size - villages.length,
+      series: seriesFor(code).map((point, index) => ({
+        start: new Date(from + index * bucketMs).toISOString().slice(0, 10),
+        ...point,
+      })),
+      seriesUnit,
     });
   }
 

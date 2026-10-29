@@ -2070,3 +2070,98 @@ td:has(> .badge), th { white-space: nowrap; }
 @keyframes sheet-up { from { transform: translateY(24px); opacity: 0; } to { transform: none; opacity: 1; } }
 @keyframes sheet-fade { from { opacity: 0; } to { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .sheet, .sheet-overlay { animation: none; } }
+
+/* ================================================================ share meter and symptom graph */
+
+/* Outcome tiles: the share of all screenings, with a tick at the previous period's share.
+   The fill takes the tile's tone through currentColor (set on .kpi__spark above). */
+.kpi__share { line-height: 1.4; }
+.share__track {
+  position: relative;
+  height: 10px;
+  border-radius: 99px;
+  background: color-mix(in srgb, currentColor 14%, transparent);
+}
+.share__fill {
+  height: 100%;
+  min-width: 4px;
+  border-radius: inherit;
+  background: currentColor;
+  transition: width 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.share__mark {
+  position: absolute;
+  top: -4px;
+  width: 2px;
+  height: 18px;
+  margin-left: -1px;
+  border-radius: 1px;
+  background: var(--ink-900);
+}
+.share__caption { margin-top: 8px; font-size: 12.5px; color: var(--ink-600); }
+.share__caption strong { color: var(--ink-900); font-weight: 650; }
+@media (prefers-reduced-motion: reduce) { .share__fill { transition: none; } }
+
+/* Moving-upward list: each symptom is a button that opens its graph. */
+.moverlist li { list-style: none; border-bottom: 1px solid var(--hairline-soft); }
+.moverlist li:last-child { border-bottom: none; }
+button.mover {
+  width: 100%;
+  min-height: 56px;
+  margin: 0;
+  padding: 10px 8px;
+  border: 0;
+  border-bottom: none;
+  border-radius: 10px;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+button.mover:hover { background: var(--surface-2); }
+button.mover:focus-visible { outline: 2px solid var(--brand-500); outline-offset: -2px; }
+.mover--selected { background: var(--brand-50); }
+.mover--selected .mover__name { color: var(--brand-ink); }
+
+.show-all { width: 100%; min-height: 44px; margin-top: 12px; }
+
+/* Symptom names in the table act as links to the graph. */
+.linkbtn {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-weight: 600;
+  color: var(--brand-ink);
+  text-align: left;
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, currentColor 35%, transparent);
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.linkbtn:focus-visible { outline: 2px solid var(--brand-500); outline-offset: 2px; border-radius: 4px; }
+
+/* The selected symptom's graph. Scrolled to on selection; clears the sticky bars. */
+.symptom-graph { scroll-margin-top: 72px; }
+.symptom-graph__stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  margin-bottom: 14px;
+  font-size: 13.5px;
+  color: var(--ink-600);
+}
+.symptom-graph__value { font-size: 22px; font-weight: 650; letter-spacing: -0.03em; color: var(--ink-900); }
+.symptom-graph__stats > div:first-child { align-self: baseline; }
+.symptom-graph__legend { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 8px; font-size: 12.5px; color: var(--ink-600); }
+.legend-swatch { display: inline-block; vertical-align: middle; margin-right: 6px; }
+.legend-swatch--bar { width: 10px; height: 10px; border-radius: 2px; background: var(--c-brand); }
+.legend-swatch--line { width: 16px; height: 0; border-top: 2px dashed var(--ink-500); }
+.symptom-graph__villages { margin-top: 12px; font-size: 13.5px; }
+
+@media (max-width: 900px) {
+  /* The table's first cell holds a button; keep it as the card title, not an action row. */
+  .table-wrap td:first-child:has(> .linkbtn) { display: block; }
+  .symptom-graph { scroll-margin-top: 64px; }
+}

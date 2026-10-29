@@ -7,12 +7,14 @@
  * page says so in its own subtitle, because a district officer reading a chart titled
  * "trending illnesses" would reasonably assume someone qualified had made that call.
  */
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import {
   Bar,
   BarChart,
   CartesianGrid,
   Cell,
+  ComposedChart,
+  Line,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -65,6 +67,16 @@ const DIRECTION_TONE: Record<TrendDirection, string> = {
   NEW: 'trend--new',
 };
 
+/** How many rows each list shows before "Show all". */
+const MOVERS_SHOWN = 5;
+const ROWS_SHOWN = 10;
+
+const UNIT_WORD: Record<SymptomTrend['seriesUnit'], string> = { day: 'day', week: 'week', month: 'month' };
+
+function shortDate(iso: string): string {
+  return new Date(`${iso}T00:00:00`).toLocaleDateString([], { day: 'numeric', month: 'short' });
+}
+
 function changeText(trend: SymptomTrend): string {
   if (trend.previous === 0) return 'No cases in the previous period';
   if (trend.changePct === null) return '—';
@@ -79,9 +91,26 @@ export function TrendsScreen() {
   const rows = trends.data ?? [];
   const movers = rows.filter((t) => t.direction === 'RISING' || t.direction === 'NEW');
 
+  // The symptom whose graph is open. Defaults to the first mover, else the most reported.
+  const [picked, setPicked] = useState<string | null>(null);
+  const [allMovers, setAllMovers] = useState(false);
+  const [allRows, setAllRows] = useState(false);
+  const graphRef = useRef<HTMLDivElement>(null);
+  const selected = rows.find((t) => t.symptomCode === picked) ?? movers[0] ?? rows[0] ?? null;
+
+  /** Opens a symptom's graph and brings it into view. */
+  function show(code: string) {
+    setPicked(code);
+    requestAnimationFrame(() => graphRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+  }
+
+  const shownMovers = allMovers ? movers : movers.slice(0, MOVERS_SHOWN);
+  const shownRows = allRows ? rows : rows.slice(0, ROWS_SHOWN);
+
   // The chart shows the ten most frequent, which is as many bars as stay readable on a
   // laptop screen. The table below carries the full list.
   const chartData = rows.slice(0, 10).map((t) => ({
+    code: t.symptomCode,
     name: t.symptomName,
     count: t.current,
     redShare: t.redShare,
@@ -104,27 +133,94 @@ export function TrendsScreen() {
           {movers.length > 0 && (
             <Card title="Moving upward" hint="Rising or newly reported in this period">
               <ul className="moverlist">
-                {movers.map((t) => (
-                  <li key={t.symptomCode} className="mover">
-                    <span className="mover__icon">
-                      <IconAlert size={16} />
-                    </span>
-                    <span className="mover__body">
-                      <span className="mover__name">{t.symptomName}</span>
-                      <span className="mover__meta">
-                        {t.current} reported · {changeText(t)}
+                {shownMovers.map((t) => (
+                  <li key={t.symptomCode}>
+                    <button
+                      type="button"
+                      className={`mover${selected?.symptomCode === t.symptomCode ? ' mover--selected' : ''}`}
+                      onClick={() => show(t.symptomCode)}
+                      aria-pressed={selected?.symptomCode === t.symptomCode}
+                    >
+                      <span className="mover__icon">
+                        <IconAlert size={16} />
                       </span>
-                    </span>
-                    <span className={`trendtag ${DIRECTION_TONE[t.direction]}`}>
-                      {DIRECTION_LABEL[t.direction]}
-                    </span>
+                      <span className="mover__body">
+                        <span className="mover__name">{t.symptomName}</span>
+                        <span className="mover__meta">
+                          {t.current} reported · {changeText(t)}
+                        </span>
+                      </span>
+                      <span className={`trendtag ${DIRECTION_TONE[t.direction]}`}>
+                        {DIRECTION_LABEL[t.direction]}
+                      </span>
+                    </button>
                   </li>
                 ))}
               </ul>
+              {movers.length > MOVERS_SHOWN && (
+                <button type="button" className="btn btn--secondary show-all" onClick={() => setAllMovers((v) => !v)}>
+                  {allMovers ? 'Show fewer' : `Show all ${movers.length} rising symptoms`}
+                </button>
+              )}
             </Card>
           )}
 
-          <Card title="Most reported symptoms" hint="Bar shading marks the share that triaged RED">
+          {selected && (
+            <div ref={graphRef} className="symptom-graph">
+              <Card
+                title={selected.symptomName}
+                hint={`Reported per ${UNIT_WORD[selected.seriesUnit]}, against the ${days} days before`}
+              >
+                <div className="symptom-graph__stats">
+                  <div><span className="symptom-graph__value">{selected.current}</span> reported</div>
+                  <div>{changeText(selected)}</div>
+                  <div>{Math.round(selected.severeShare * 100)}% severe</div>
+                  <div>{Math.round(selected.redShare * 100)}% triaged RED</div>
+                </div>
+                <ResponsiveContainer width="100%" height={240}>
+                  <ComposedChart
+                    data={selected.series.map((p) => ({ ...p, label: shortDate(p.start) }))}
+                    margin={{ top: 8, right: 8, left: -18, bottom: 0 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke={CHART.grid} vertical={false} />
+                    <XAxis dataKey="label" tick={axis} tickLine={false} axisLine={false} />
+                    <YAxis tick={axis} tickLine={false} axisLine={false} allowDecimals={false} />
+                    <Tooltip
+                      {...TOOLTIP_BAR}
+                      formatter={(value: number, name) => [
+                        `${value} reported`,
+                        name === 'current' ? 'This period' : `The ${days} days before`,
+                      ]}
+                    />
+                    <Bar dataKey="current" fill="var(--c-brand)" radius={[3, 3, 0, 0]} maxBarSize={36} />
+                    <Line
+                      dataKey="previous"
+                      type="monotone"
+                      stroke="var(--ink-500)"
+                      strokeDasharray="5 4"
+                      strokeWidth={2}
+                      dot={false}
+                    />
+                  </ComposedChart>
+                </ResponsiveContainer>
+                <div className="symptom-graph__legend">
+                  <span><i className="legend-swatch legend-swatch--bar" /> This period</span>
+                  <span><i className="legend-swatch legend-swatch--line" /> The {days} days before</span>
+                </div>
+                <div className="symptom-graph__villages">
+                  <span className="muted">Villages: </span>
+                  {selected.villages.length === 0
+                    ? <span className="muted">too few per village to show</span>
+                    : selected.villages.map((v) => `${v.village} (${v.count})`).join(', ')}
+                  {selected.villagesSuppressed > 0 && (
+                    <span className="muted"> + {selected.villagesSuppressed} below threshold</span>
+                  )}
+                </div>
+              </Card>
+            </div>
+          )}
+
+          <Card title="Most reported symptoms" hint="Bar shading marks the share that triaged RED. Tap a bar for its graph.">
             <ResponsiveContainer width="100%" height={320}>
               <BarChart data={chartData} layout="vertical" margin={{ left: 12, right: 24 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke={CHART.grid} horizontal={false} />
@@ -136,7 +232,13 @@ export function TrendsScreen() {
                     name === 'count' ? [`${value} reported`, 'Occurrences'] : [value, name]
                   }
                 />
-                <Bar dataKey="count" radius={[0, 2, 2, 0]} maxBarSize={28}>
+                <Bar
+                  dataKey="count"
+                  radius={[0, 2, 2, 0]}
+                  maxBarSize={28}
+                  cursor="pointer"
+                  onClick={(entry: { code?: string }) => entry.code && show(entry.code)}
+                >
                   {chartData.map((entry) => (
                     <Cell
                       key={entry.name}
@@ -158,7 +260,7 @@ export function TrendsScreen() {
             </ResponsiveContainer>
           </Card>
 
-          <Card title="All reported symptoms">
+          <Card title="All reported symptoms" hint="Tap a symptom to see its graph">
             <div className="table-wrap">
               <table>
                 <thead>
@@ -173,9 +275,13 @@ export function TrendsScreen() {
                   </tr>
                 </thead>
                 <tbody>
-                  {rows.map((t) => (
+                  {shownRows.map((t) => (
                     <tr key={t.symptomCode}>
-                      <td>{t.symptomName}</td>
+                      <td>
+                        <button type="button" className="linkbtn" onClick={() => show(t.symptomCode)}>
+                          {t.symptomName}
+                        </button>
+                      </td>
                       <td className="num">{t.current}</td>
                       <td className="num">
                         {t.previous === 0 ? '—' : `${t.changePct! > 0 ? '+' : ''}${t.changePct}%`}
@@ -210,6 +316,11 @@ export function TrendsScreen() {
                 </tbody>
               </table>
             </div>
+            {rows.length > ROWS_SHOWN && (
+              <button type="button" className="btn btn--secondary show-all" onClick={() => setAllRows((v) => !v)}>
+                {allRows ? 'Show fewer' : `Show all ${rows.length} symptoms`}
+              </button>
+            )}
           </Card>
 
           <p className="footnote">
