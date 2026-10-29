@@ -138,6 +138,18 @@ export const IconSearch = (p: IconProps) => (
   <Svg {...p}><circle cx="11" cy="11" r="6.5" /><path d="m20 20-4.2-4.2" /></Svg>
 );
 
+export const IconMore = (p: IconProps) => (
+  <Svg {...p}>
+    <circle cx="5.5" cy="12" r="1.3" fill="currentColor" stroke="none" />
+    <circle cx="12" cy="12" r="1.3" fill="currentColor" stroke="none" />
+    <circle cx="18.5" cy="12" r="1.3" fill="currentColor" stroke="none" />
+  </Svg>
+);
+
+export const IconClose = (p: IconProps) => (
+  <Svg {...p}><path d="M6.5 6.5l11 11M17.5 6.5l-11 11" /></Svg>
+);
+
 export const IconPlus = (p: IconProps) => (
   <Svg {...p}><path d="M12 5v14" /><path d="M5 12h14" /></Svg>
 );

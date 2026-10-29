@@ -1,8 +1,8 @@
 /**
  * Shared dashboard UI: layout shell, data-fetch hook, and small presentational pieces.
  */
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { can, type Permission } from '@rhm/shared';
 import { ApiError, get, useAuth } from '../api.ts';
 import {
@@ -10,6 +10,8 @@ import {
   IconAnalytics,
   IconAudit,
   IconChw,
+  IconClose,
+  IconMore,
   IconOverview,
   IconReferrals,
   IconRules,
@@ -180,6 +182,25 @@ export function Shell({ children }: { children: ReactNode }) {
   const openPalette = useCallback(() => setPaletteOpen(true), []);
   useCommandShortcut(openPalette);
 
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const contentRef = useRef<HTMLDivElement>(null);
+  useTableLabels(contentRef);
+  const { pathname } = useLocation();
+
+  // A link the role cannot use is not rendered. The API refuses the request regardless;
+  // hiding it is a courtesy, never the control (spec s16).
+  const visibleNav = useMemo(
+    () => NAV
+      .map((group) => ({ ...group, items: group.items.filter((item) => !item.permission || can(role, item.permission)) }))
+      .filter((group) => group.items.length > 0),
+    [role],
+  );
+  const tabItems = useMemo(() => {
+    const all = visibleNav.flatMap((group) => group.items);
+    return TAB_PRIORITY.map((to) => all.find((item) => item.to === to)).filter((item): item is NavItem => !!item).slice(0, 4);
+  }, [visibleNav]);
+  const moreActive = !tabItems.some((item) => (item.to === '/' ? pathname === '/' : pathname.startsWith(item.to)));
+
   // Every destination the role can reach, then the global actions.
   const commands = useMemo<Command[]>(() => [
     ...NAV.flatMap((group) => group.items
@@ -265,11 +286,212 @@ export function Shell({ children }: { children: ReactNode }) {
         </div>
       </aside>
 
-      <div className="content">{children}</div>
+      <MobileTopBar onSearch={openPalette} onAccount={() => setSheetOpen(true)} name={session?.user.name ?? ''} />
+
+      <div className="content" ref={contentRef}>{children}</div>
+
+      <MobileTabBar items={tabItems} moreActive={moreActive} onMore={() => setSheetOpen(true)} />
+      {sheetOpen && (
+        <MoreSheet
+          groups={visibleNav}
+          name={session?.user.name ?? ''}
+          role={role}
+          onSignOut={signOut}
+          onClose={() => setSheetOpen(false)}
+        />
+      )}
 
       {paletteOpen && <CommandPalette commands={commands} onClose={() => setPaletteOpen(false)} />}
     </div>
   );
+}
+
+// ---------------------------------------------------------------------------
+// Phone layout
+// ---------------------------------------------------------------------------
+//
+// Below 900px the sidebar is hidden (it used to become one long horizontal strip, with
+// most links off the edge of a phone screen and nothing to say it scrolled). Phones get
+// a slim top bar, a bottom tab bar with the role's four most-used destinations, and a
+// "More" sheet holding every destination plus the account controls.
+
+/** Order of preference for the bottom tabs; the role's first four permitted win. */
+const TAB_PRIORITY = ['/', '/referrals', '/analytics', '/trends', '/villages', '/chws', '/sync'];
+
+const SHORT_LABEL: Record<string, string> = {
+  '/trends': 'Trends',
+  '/chws': 'CHWs',
+  '/sync': 'Sync',
+};
+
+function MobileTopBar({ onSearch, onAccount, name }: { onSearch(): void; onAccount(): void; name: string }) {
+  return (
+    <header className="mbar">
+      <span className="mbar__mark" aria-hidden="true"><Mark /></span>
+      <span className="mbar__title">FirstLine</span>
+      <button type="button" className="mbar__icon" onClick={onSearch} aria-label="Search pages and actions">
+        <IconSearch size={20} />
+      </button>
+      <button type="button" className="mbar__avatar" onClick={onAccount} aria-label="Account and all pages">
+        {name.trim().charAt(0).toUpperCase() || '?'}
+      </button>
+    </header>
+  );
+}
+
+function MobileTabBar({ items, moreActive, onMore }: { items: NavItem[]; moreActive: boolean; onMore(): void }) {
+  return (
+    <nav className="tabbar" aria-label="Main">
+      {items.map((item) => {
+        const Icon = item.icon;
+        return (
+          <NavLink key={item.to} to={item.to} end={item.to === '/'} className="tabbar__item">
+            <Icon size={22} />
+            <span>{SHORT_LABEL[item.to] ?? item.label}</span>
+          </NavLink>
+        );
+      })}
+      <button
+        type="button"
+        className={`tabbar__item${moreActive ? ' active' : ''}`}
+        onClick={onMore}
+        aria-haspopup="dialog"
+      >
+        <IconMore size={22} />
+        <span>More</span>
+      </button>
+    </nav>
+  );
+}
+
+function MoreSheet({
+  groups,
+  name,
+  role,
+  onSignOut,
+  onClose,
+}: {
+  groups: Array<{ section: string; items: NavItem[] }>;
+  name: string;
+  role: string;
+  onSignOut(): void;
+  onClose(): void;
+}) {
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => event.key === 'Escape' && onClose();
+    window.addEventListener('keydown', onKey);
+    const overflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      document.body.style.overflow = overflow;
+    };
+  }, [onClose]);
+
+  return (
+    <div className="sheet-overlay" onClick={onClose}>
+      <div className="sheet" role="dialog" aria-modal="true" aria-label="All pages and account" onClick={(e) => e.stopPropagation()}>
+        <div className="sheet__grip" aria-hidden="true" />
+        <div className="sheet__head">
+          <span className="sidebar__avatar" aria-hidden="true">{name.trim().charAt(0).toUpperCase() || '?'}</span>
+          <div className="sheet__who">
+            <div className="sheet__name">{name}</div>
+            <div className="sheet__role">{role.toLowerCase()}</div>
+          </div>
+          <button type="button" className="mbar__icon" onClick={onClose} aria-label="Close">
+            <IconClose size={20} />
+          </button>
+        </div>
+
+        {groups.map((group) => (
+          <div key={group.section} className="sheet__group">
+            <div className="sheet__section">{group.section}</div>
+            {group.items.map((item) => {
+              const Icon = item.icon;
+              return (
+                <NavLink key={item.to} to={item.to} end={item.to === '/'} className="sheet__link" onClick={onClose}>
+                  <span className="sidebar__glyph"><Icon size={18} /></span>
+                  {item.label}
+                </NavLink>
+              );
+            })}
+          </div>
+        ))}
+
+        <div className="sheet__group">
+          <div className="sheet__section">Appearance</div>
+          <ThemeSwitch />
+        </div>
+
+        <button type="button" className="sheet__signout" onClick={onSignOut}>
+          Sign out
+        </button>
+      </div>
+    </div>
+  );
+}
+
+const PHONE = '(max-width: 900px)';
+
+/**
+ * Long lists on a phone: the first `step` rows, then a "Show more" button. On a wider
+ * screen every row shows, as before.
+ */
+export function usePhoneLimit<T>(items: T[] | null | undefined, step = 20): { visible: T[]; more: ReactNode } {
+  const [phone, setPhone] = useState(() => window.matchMedia(PHONE).matches);
+  const [limit, setLimit] = useState(step);
+
+  useEffect(() => {
+    const query = window.matchMedia(PHONE);
+    const onChange = () => setPhone(query.matches);
+    query.addEventListener('change', onChange);
+    return () => query.removeEventListener('change', onChange);
+  }, []);
+
+  // A new result set (another filter or page) starts from the top again.
+  useEffect(() => setLimit(step), [items, step]);
+
+  const list = items ?? [];
+  const visible = phone ? list.slice(0, limit) : list;
+  const hidden = list.length - visible.length;
+  const more = hidden > 0 ? (
+    <button type="button" className="btn btn--secondary show-more" onClick={() => setLimit((n) => n + step)}>
+      Show {Math.min(step, hidden)} more
+      <span className="muted"> · {hidden} left</span>
+    </button>
+  ) : null;
+
+  return { visible, more };
+}
+
+/**
+ * Gives every table cell a `data-label` from its column heading, so that on a phone the
+ * stylesheet can lay each row out as a labelled card instead of a table cut off at the
+ * screen edge. Done once here rather than in each of the nine tables, and kept current
+ * as rows load or change.
+ */
+function useTableLabels(root: React.RefObject<HTMLElement>) {
+  useEffect(() => {
+    const element = root.current;
+    if (!element) return;
+
+    const label = () => {
+      element.querySelectorAll<HTMLTableElement>('.table-wrap table').forEach((table) => {
+        const headings = [...table.querySelectorAll('thead th')].map((th) => th.textContent?.trim() ?? '');
+        table.querySelectorAll('tbody tr').forEach((row) => {
+          [...row.children].forEach((cell, index) => {
+            const text = headings[index] ?? '';
+            if (cell.getAttribute('data-label') !== text) cell.setAttribute('data-label', text);
+          });
+        });
+      });
+    };
+
+    label();
+    const observer = new MutationObserver(label);
+    observer.observe(element, { childList: true, subtree: true });
+    return () => observer.disconnect();
+  }, [root]);
 }
 
 export function Page({

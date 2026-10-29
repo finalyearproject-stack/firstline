@@ -21,6 +21,7 @@ import {
   Page,
   formatDate,
   formatDateTime,
+  usePhoneLimit,
   useResource,
 } from '../components/ui.tsx';
 import { IconAlert, IconClock, IconRules, IconSync, IconVersion } from '../components/icons.tsx';
@@ -40,6 +41,7 @@ export function ReferralsScreen() {
   if (urgency) query.set('urgency', urgency);
 
   const referrals = useResource<ReferralRow[]>(`/referrals?${query}`, [status, urgency]);
+  const shown = usePhoneLimit(referrals.data);
 
   // Only a nurse or health officer may change a referral's state; an official viewing
   // the programme sees the list read-only. The API enforces this regardless.
@@ -107,7 +109,7 @@ export function ReferralsScreen() {
                 </tr>
               </thead>
               <tbody>
-                {referrals.data!.map((referral) => (
+                {shown.visible.map((referral) => (
                   <tr key={referral.id}>
                     <td>
                       <strong>
@@ -152,6 +154,7 @@ export function ReferralsScreen() {
                 ))}
               </tbody>
             </table>
+            {shown.more}
           </div>
         )}
       </Card>
@@ -541,6 +544,7 @@ export function AuditScreen() {
   if (action) query.set('action', action);
 
   const audit = useResource<AuditRow[]>(`/audit?${query}`, [action, page]);
+  const shown = usePhoneLimit(audit.data);
 
   return (
     <Page
@@ -601,7 +605,7 @@ export function AuditScreen() {
                   </tr>
                 </thead>
                 <tbody>
-                  {audit.data!.map((entry) => (
+                  {shown.visible.map((entry) => (
                     <tr key={entry.id}>
                       <td className="small" style={{ whiteSpace: 'nowrap' }}>{formatDateTime(entry.timestamp)}</td>
                       <td>
@@ -619,6 +623,7 @@ export function AuditScreen() {
                   ))}
                 </tbody>
               </table>
+              {shown.more}
             </div>
 
             <div className="row row--between mt-24">

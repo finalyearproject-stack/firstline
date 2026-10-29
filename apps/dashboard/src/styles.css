@@ -1826,3 +1826,247 @@ td:has(> .badge), th { white-space: nowrap; }
 .kpi--compact .kpi__label { font-size: 12.5px; color: var(--ink-500); margin-bottom: 6px; }
 .kpi--compact .kpi__value { font-size: 24px; }
 .kpi--compact .kpi__delta { font-size: 11.5px; padding: 1px 6px; }
+
+/* ================================================================ phone layout */
+
+/*
+ * Below 900px: no sidebar. A slim top bar (mark, search, account), a bottom tab bar with
+ * the role's four main destinations, and a "More" sheet with everything else. Tables
+ * become labelled cards. Above 900px none of this renders, so the desktop is unchanged.
+ */
+.mbar, .tabbar { display: none; }
+
+@media (max-width: 900px) {
+  .sidebar { display: none; }
+
+  .mbar {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    min-height: 56px;
+    padding: env(safe-area-inset-top) 8px 0 16px;
+    background: color-mix(in srgb, var(--canvas) 86%, transparent);
+    -webkit-backdrop-filter: saturate(1.4) blur(14px);
+    backdrop-filter: saturate(1.4) blur(14px);
+    border-bottom: 1px solid var(--hairline);
+  }
+  .mbar__mark { display: grid; place-items: center; width: 30px; height: 30px; margin-right: 6px; border-radius: 8px; background: var(--brand-700); color: #fff; }
+  .mbar__mark svg { width: 18px; height: 18px; }
+  .mbar__title { flex: 1; font-size: 16px; font-weight: 650; letter-spacing: -0.02em; color: var(--ink-900); }
+  .mbar__icon {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border: 0;
+    border-radius: 12px;
+    background: transparent;
+    color: var(--ink-700);
+    cursor: pointer;
+  }
+  /* A 32px initial inside a 44px touch target. */
+  .mbar__avatar {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border: 0;
+    border-radius: 50%;
+    background: radial-gradient(circle, var(--brand-100) 0 16px, transparent 16.5px);
+    font: inherit;
+    font-size: 14px;
+    font-weight: 650;
+    color: var(--brand-ink);
+    cursor: pointer;
+  }
+  .mbar__icon:focus-visible, .mbar__avatar:focus-visible { outline: 2px solid var(--brand-500); outline-offset: -2px; }
+
+  /* The page header scrolls away with the content; only the bar above stays. */
+  .topbar {
+    position: static;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 18px 16px 12px;
+    border-bottom: none;
+    background: transparent;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+  .topbar h1 { font-size: 24px; font-weight: 650; letter-spacing: -0.035em; }
+  .page { padding: 4px 16px calc(96px + env(safe-area-inset-bottom)); }
+
+  /* Bottom tabs: thumb reach, 54px targets, labels always shown. */
+  .tabbar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 20;
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 1fr;
+    padding: 6px 6px max(6px, env(safe-area-inset-bottom));
+    background: color-mix(in srgb, var(--surface) 88%, transparent);
+    -webkit-backdrop-filter: saturate(1.6) blur(16px);
+    backdrop-filter: saturate(1.6) blur(16px);
+    border-top: 1px solid var(--hairline);
+  }
+  .tabbar__item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    min-height: 54px;
+    border: 0;
+    border-radius: 12px;
+    background: transparent;
+    font: inherit;
+    font-size: 11.5px;
+    font-weight: 500;
+    color: var(--ink-500);
+    text-decoration: none;
+    cursor: pointer;
+  }
+  .tabbar__item.active { color: var(--brand-ink); }
+  .tabbar__item.active svg { stroke-width: 2.1; }
+  .tabbar__item:focus-visible { outline: 2px solid var(--brand-500); outline-offset: -2px; }
+
+  /* The range selector fills the width instead of hugging the left edge. */
+  .topbar .segmented { width: 100%; display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; }
+  .topbar .segmented__btn { min-height: 38px; }
+
+  /* Headline figures two to a row, so a phone screen shows the set at a glance. */
+  .grid--kpi-primary { grid-template-columns: repeat(2, 1fr); }
+  .grid--kpi-primary .kpi__value { font-size: 28px; }
+
+  /* Two-column chart grids would need 380px a column; one column on a phone. */
+  .grid--2 { grid-template-columns: 1fr; }
+
+  /* ------------------------------------------------------------ tables as cards */
+
+  /* Each row becomes a section of the card it already sits in (no card inside a card):
+     its first column as the title, then the other columns as labelled fields, two to a
+     line, so a row reads at a glance without a table running off the screen. */
+  .table-wrap { overflow: visible; }
+  .table-wrap table, .table-wrap tbody { display: block; width: 100%; }
+  .table-wrap thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+  .table-wrap tr {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px 16px;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--hairline);
+  }
+  .table-wrap tr:last-child { border-bottom: none; }
+  .table-wrap tr:hover { background: transparent; }
+  .table-wrap td {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+    min-width: 0;
+    padding: 0;
+    border: none;
+    text-align: left;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    font-size: 14px;
+  }
+  .table-wrap td::before {
+    content: attr(data-label);
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--ink-500);
+  }
+  /* The first column names the row. */
+  .table-wrap td:first-child { grid-column: 1 / -1; font-size: 15px; }
+  .table-wrap td:first-child::before { content: none; }
+  /* Cells holding buttons span the row and carry no label. */
+  .table-wrap td:has(> .btn, > button) { grid-column: 1 / -1; flex-direction: row; flex-wrap: wrap; gap: 8px; }
+  .table-wrap td:has(> .btn, > button)::before { content: none; }
+  .table-wrap td .btn { min-height: 40px; }
+  .show-more { width: 100%; min-height: 44px; margin-top: 8px; }
+}
+
+/* The More sheet. */
+.sheet-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: flex-end;
+  background: rgba(9, 9, 11, 0.42);
+  animation: sheet-fade 0.18s ease both;
+}
+.sheet {
+  width: 100%;
+  max-height: 88vh;
+  overflow-y: auto;
+  padding: 8px 16px max(20px, env(safe-area-inset-bottom));
+  border-radius: 20px 20px 0 0;
+  background: var(--surface);
+  box-shadow: var(--shadow-lg);
+  animation: sheet-up 0.26s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.sheet__grip { width: 40px; height: 4px; margin: 4px auto 10px; border-radius: 99px; background: var(--ink-200); }
+.sheet__head { display: flex; align-items: center; gap: 12px; padding: 4px 0 12px; border-bottom: 1px solid var(--hairline-soft); }
+.sheet__head .sidebar__avatar { width: 40px; height: 40px; font-size: 16px; }
+.sheet__who { flex: 1; min-width: 0; }
+.sheet__name { font-size: 16px; font-weight: 600; color: var(--ink-900); }
+.sheet__role { font-size: 13px; color: var(--ink-500); text-transform: capitalize; }
+.sheet__head .mbar__icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--surface-2);
+  color: var(--ink-700);
+  cursor: pointer;
+}
+.sheet__group { padding: 14px 0 4px; }
+.sheet__section { margin-bottom: 6px; font-size: 12.5px; font-weight: 500; color: var(--ink-500); }
+.sheet__link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 48px;
+  padding: 0 10px;
+  border-radius: 12px;
+  font-size: 15.5px;
+  font-weight: 500;
+  color: var(--ink-800);
+  text-decoration: none;
+}
+.sheet__link.active { background: var(--brand-50); color: var(--brand-ink); }
+.sheet__link.active .sidebar__glyph { color: var(--brand-ink); }
+.sheet__group .theme-switch { display: grid; grid-template-columns: repeat(3, 1fr); margin: 0; }
+.sheet__group .theme-switch button { min-height: 40px; }
+.sheet__signout {
+  width: 100%;
+  min-height: 48px;
+  margin-top: 16px;
+  border: 1px solid var(--hairline);
+  border-radius: 12px;
+  background: var(--surface-2);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink-900);
+  cursor: pointer;
+}
+@keyframes sheet-up { from { transform: translateY(24px); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes sheet-fade { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .sheet, .sheet-overlay { animation: none; } }
