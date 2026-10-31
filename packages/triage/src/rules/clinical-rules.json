@@ -1,5 +1,5 @@
 {
-  "rulesetVersion": "1.0.0-TEMPLATE",
+  "rulesetVersion": "1.2.0-TEMPLATE",
   "metadata": {
     "name": "Rural CHW screening rule set (UNAPPROVED TEMPLATE)",
     "disclaimer": "THIS FILE IS A CONFIGURATION TEMPLATE, NOT AN APPROVED CLINICAL PROTOCOL. The thresholds below are placeholders drawn from widely published general-reference danger-sign values so that the engine can be exercised end to end. They have NOT been reviewed or approved by any clinical authority. Before any use involving real patients, the responsible health authority must review every rule, replace the thresholds with those of the locally approved protocol, record the approver in metadata.approvedBy and the approval date in metadata.approvedOn, and raise rulesetVersion. The application is a decision-support tool for trained Community Health Workers and never replaces the judgement of a qualified clinician.",
@@ -146,8 +146,52 @@
       "explanation": "Low blood sugar can deteriorate quickly and is treated before and during referral."
     },
     {
+      "id": "MAL-RED-01",
+      "name": "Positive malaria test with a danger sign",
+      "category": "malaria",
+      "riskLevel": "RED",
+      "priority": 97,
+      "referralRequired": true,
+      "condition": {
+        "all": [
+          {
+            "fact": "malariaRdt",
+            "op": "eq",
+            "value": "POSITIVE"
+          },
+          {
+            "any": [
+              {
+                "fact": "symptom.convulsions",
+                "op": "present"
+              },
+              {
+                "fact": "symptom.unconscious",
+                "op": "present"
+              },
+              {
+                "fact": "symptom.confusion",
+                "op": "present"
+              },
+              {
+                "fact": "symptom.unable_to_feed",
+                "op": "present"
+              },
+              {
+                "fact": "symptom.vomits_everything",
+                "op": "present"
+              }
+            ]
+          }
+        ]
+      },
+      "label": "Positive malaria test with a danger sign",
+      "recommendation": "Severe malaria is possible. Refer to the health facility immediately with a referral letter. If you are trained in community case management, give the pre-referral treatment from your kit before the patient leaves.",
+      "explanation": "Malaria with fits, confusion, inability to feed or vomiting everything can kill within hours and needs facility treatment."
+    },
+    {
       "id": "MAT-RED-01",
-      "name": "Danger signs in pregnancy",
+      "name": "Danger sign during pregnancy (WHO)",
       "category": "maternal",
       "riskLevel": "RED",
       "priority": 96,
@@ -175,14 +219,23 @@
               {
                 "fact": "symptom.convulsions",
                 "op": "present"
+              },
+              {
+                "fact": "symptom.difficulty_breathing",
+                "op": "present"
+              },
+              {
+                "fact": "respiratoryRate",
+                "op": "gte",
+                "value": 30
               }
             ]
           }
         ]
       },
       "label": "Danger sign during pregnancy",
-      "recommendation": "This is an emergency. Refer to the health facility immediately and arrange transport now.",
-      "explanation": "Bleeding, severe pain, reduced fetal movement or convulsions in pregnancy are always escalated without delay."
+      "recommendation": "This is an emergency. Refer to the hospital or health centre immediately, day or night, without waiting, and arrange transport now. Give her a referral letter.",
+      "explanation": "WHO PCPNC (C15) lists this among the signs for which a pregnant woman should go to the hospital or health centre immediately, day or night, without waiting: vaginal bleeding, convulsions, severe abdominal pain, fast or difficult breathing. Reduced fetal movement is also included."
     },
     {
       "id": "HTN-RED-01",
@@ -217,6 +270,116 @@
       "label": "Very high blood pressure together with a persistent headache",
       "recommendation": "Refer the patient to the health facility immediately. Do not wait for the next visit. Arrange transport if you can, and record the referral before you leave.",
       "explanation": "A blood pressure this high combined with a headache that has lasted several days is one of the danger-sign patterns the protocol asks you to escalate the same day."
+    },
+    {
+      "id": "NUT-RED-01",
+      "name": "MUAC in the red band",
+      "category": "nutrition",
+      "riskLevel": "RED",
+      "priority": 95,
+      "referralRequired": true,
+      "condition": {
+        "fact": "muacColour",
+        "op": "eq",
+        "value": "RED"
+      },
+      "label": "MUAC tape reads red (severe malnutrition)",
+      "recommendation": "Refer to the health facility today for treatment of severe acute malnutrition. Give the caregiver a referral letter and agree when you will visit again.",
+      "explanation": "A red MUAC reading marks severe acute malnutrition, which carries a high risk of death without treatment."
+    },
+    {
+      "id": "NUT-RED-02",
+      "name": "Swelling of both feet in a child",
+      "category": "nutrition",
+      "riskLevel": "RED",
+      "priority": 95,
+      "referralRequired": true,
+      "condition": {
+        "all": [
+          {
+            "fact": "age",
+            "op": "lt",
+            "value": 5
+          },
+          {
+            "fact": "oedema",
+            "op": "eq",
+            "value": true
+          }
+        ]
+      },
+      "label": "Swelling of both feet in a child under five",
+      "recommendation": "Refer to the health facility today. Swelling of both feet in a young child is a sign of severe malnutrition.",
+      "explanation": "Bilateral pitting oedema is a sign of severe acute malnutrition whatever the MUAC reading."
+    },
+    {
+      "id": "MAT-RED-03",
+      "name": "Severe headache or blurred vision in pregnancy (WHO)",
+      "category": "maternal",
+      "riskLevel": "RED",
+      "priority": 95,
+      "referralRequired": true,
+      "condition": {
+        "all": [
+          {
+            "fact": "symptom.pregnant",
+            "op": "present"
+          },
+          {
+            "any": [
+              {
+                "fact": "symptom.blurred_vision",
+                "op": "present"
+              },
+              {
+                "fact": "symptom.headache.severity",
+                "op": "gte",
+                "value": "SEVERE"
+              }
+            ]
+          }
+        ]
+      },
+      "label": "Severe headache or blurred vision during pregnancy",
+      "recommendation": "Refer to the hospital or health centre immediately, day or night, without waiting. These can be signs of pre-eclampsia, which can lead to fits.",
+      "explanation": "WHO PCPNC (C15) lists this among the signs for which a pregnant woman should go immediately (\"severe headaches with blurred vision\"); WHO also treats severe headache and blurred vision as priority signs of pre-eclampsia."
+    },
+    {
+      "id": "MAT-RED-04",
+      "name": "Fever and too weak to get out of bed (WHO)",
+      "category": "maternal",
+      "riskLevel": "RED",
+      "priority": 95,
+      "referralRequired": true,
+      "referralUrgency": "IMMEDIATE",
+      "condition": {
+        "all": [
+          {
+            "fact": "symptom.pregnant",
+            "op": "present"
+          },
+          {
+            "fact": "symptom.too_weak_to_get_up",
+            "op": "present"
+          },
+          {
+            "any": [
+              {
+                "fact": "temperatureC",
+                "op": "gte",
+                "value": 37.5
+              },
+              {
+                "fact": "symptom.fever_felt",
+                "op": "present"
+              }
+            ]
+          }
+        ]
+      },
+      "label": "Fever and too weak to get out of bed during pregnancy",
+      "recommendation": "This is an emergency. Refer to the hospital or health centre immediately, day or night, without waiting, and arrange transport now.",
+      "explanation": "WHO PCPNC (C15) lists this among the signs for which a pregnant woman should go immediately (\"fever and too weak to get out of bed\"); it can mean a severe infection such as malaria or sepsis."
     },
     {
       "id": "DEHY-RED-01",
@@ -468,11 +631,11 @@
     },
     {
       "id": "MAT-AMBER-02",
-      "name": "Fever in pregnancy",
+      "name": "Fever during pregnancy (WHO)",
       "category": "maternal",
       "riskLevel": "AMBER",
       "priority": 69,
-      "referralRequired": false,
+      "referralRequired": true,
       "condition": {
         "all": [
           {
@@ -480,18 +643,60 @@
             "op": "present"
           },
           {
-            "fact": "temperatureC",
-            "op": "between",
-            "value": [
-              37.5,
-              38.9
+            "any": [
+              {
+                "fact": "temperatureC",
+                "op": "gte",
+                "value": 37.5
+              },
+              {
+                "fact": "symptom.fever_felt",
+                "op": "present"
+              }
             ]
           }
         ]
       },
       "label": "Fever during pregnancy",
-      "recommendation": "Refer the mother to the facility for assessment within 24 hours. Advise her to keep drinking fluids and to come sooner if the fever rises or she begins to shiver uncontrollably.",
-      "explanation": "Fever in pregnancy is assessed rather than treated in the community, because several of its causes need tests the CHW cannot do."
+      "recommendation": "She should go to the health centre as soon as possible, today or tomorrow. Advise her to keep drinking fluids, and to go immediately if she becomes too weak to get out of bed.",
+      "explanation": "WHO PCPNC (C15) lists this among the signs for which a pregnant woman should go to the health centre as soon as possible. Fever with weakness is an immediate danger sign (MAT-RED-04).",
+      "referralUrgency": "WITHIN_24H"
+    },
+    {
+      "id": "MAT-AMBER-04",
+      "name": "Go to the health centre soon (WHO)",
+      "category": "maternal",
+      "riskLevel": "AMBER",
+      "priority": 69,
+      "referralRequired": true,
+      "referralUrgency": "WITHIN_24H",
+      "condition": {
+        "all": [
+          {
+            "fact": "symptom.pregnant",
+            "op": "present"
+          },
+          {
+            "any": [
+              {
+                "fact": "symptom.abdominal_pain",
+                "op": "present"
+              },
+              {
+                "fact": "symptom.feels_ill",
+                "op": "present"
+              },
+              {
+                "fact": "symptom.swollen_face_hands",
+                "op": "present"
+              }
+            ]
+          }
+        ]
+      },
+      "label": "Abdominal pain, feeling ill or swelling during pregnancy",
+      "recommendation": "She should go to the health centre as soon as possible, today or tomorrow, to be checked. Go immediately if the pain becomes severe, she bleeds, has a fit, or gets a severe headache with blurred vision.",
+      "explanation": "WHO PCPNC (C15) lists this among the signs for which a pregnant woman should go to the health centre as soon as possible: abdominal pain, feels ill, swelling of fingers, face or legs."
     },
     {
       "id": "MAT-AMBER-03",
@@ -499,7 +704,7 @@
       "category": "maternal",
       "riskLevel": "AMBER",
       "priority": 68,
-      "referralRequired": false,
+      "referralRequired": true,
       "condition": {
         "all": [
           {
@@ -514,7 +719,8 @@
       },
       "label": "Cannot keep food or fluids down while pregnant",
       "recommendation": "Refer to the facility within 24 hours. Encourage small, frequent sips of clean water or oral rehydration solution in the meantime, and ask a family member to watch for drowsiness.",
-      "explanation": "A mother who cannot keep fluids down can become dehydrated quickly, and dehydration in pregnancy affects both her and the baby."
+      "explanation": "A mother who cannot keep fluids down can become dehydrated quickly, and dehydration in pregnancy affects both her and the baby.",
+      "referralUrgency": "WITHIN_24H"
     },
     {
       "id": "CHILD-AMBER-02",
@@ -545,6 +751,37 @@
       "explanation": "Diarrhoea alone is common, but with severe pain it needs assessment sooner than the next routine visit."
     },
     {
+      "id": "GEN-AMBER-05",
+      "name": "Possible tuberculosis",
+      "category": "general",
+      "riskLevel": "AMBER",
+      "priority": 67,
+      "referralRequired": true,
+      "condition": {
+        "all": [
+          {
+            "fact": "symptom.cough",
+            "op": "present"
+          },
+          {
+            "any": [
+              {
+                "fact": "symptom.night_sweats",
+                "op": "present"
+              },
+              {
+                "fact": "symptom.weight_loss",
+                "op": "present"
+              }
+            ]
+          }
+        ]
+      },
+      "label": "Cough with night sweats or weight loss (possible TB)",
+      "recommendation": "Refer to the health facility for a TB test (sputum). Advise the patient to cover their mouth when coughing and to keep rooms ventilated until they are tested.",
+      "explanation": "Cough with night sweats or weight loss is a common screening sign for tuberculosis and should be tested at a facility."
+    },
+    {
       "id": "CHILD-AMBER-01",
       "name": "Prolonged diarrhoea in a child",
       "category": "child",
@@ -572,6 +809,22 @@
       "label": "Diarrhoea lasting three days or more in a young child",
       "recommendation": "Give oral rehydration advice today and arrange follow-up within two days. Refer if the child cannot drink or becomes drowsy.",
       "explanation": "Diarrhoea that lasts several days risks dehydration and needs close follow-up."
+    },
+    {
+      "id": "MAL-AMBER-02",
+      "name": "Positive malaria test",
+      "category": "malaria",
+      "riskLevel": "AMBER",
+      "priority": 66,
+      "referralRequired": false,
+      "condition": {
+        "fact": "malariaRdt",
+        "op": "eq",
+        "value": "POSITIVE"
+      },
+      "label": "Positive malaria test",
+      "recommendation": "If you are trained in community case management and the patient has no danger signs, treat with the malaria medicine in your kit as the national guidelines describe; otherwise refer to the health facility. Visit again in three days, and refer at once if the patient gets worse.",
+      "explanation": "Uncomplicated malaria can be treated in the community by a trained VHT, but must be followed up."
     },
     {
       "id": "GEN-AMBER-01",
@@ -677,6 +930,22 @@
       "explanation": "A single raised reading is not a diagnosis. The protocol asks for a repeat measurement before the patient is referred for assessment."
     },
     {
+      "id": "NUT-AMBER-02",
+      "name": "MUAC in the yellow band",
+      "category": "nutrition",
+      "riskLevel": "AMBER",
+      "priority": 60,
+      "referralRequired": false,
+      "condition": {
+        "fact": "muacColour",
+        "op": "eq",
+        "value": "YELLOW"
+      },
+      "label": "MUAC tape reads yellow (moderate malnutrition)",
+      "recommendation": "Counsel the caregiver on feeding, link the family to the nutrition programme at the health facility, and measure the arm again in two weeks.",
+      "explanation": "A yellow MUAC reading marks moderate acute malnutrition, which can become severe without support."
+    },
+    {
       "id": "DEHY-AMBER-01",
       "name": "Prolonged diarrhoea in an older child or adult",
       "category": "dehydration",
@@ -776,13 +1045,22 @@
       "priority": 55,
       "referralRequired": false,
       "condition": {
-        "fact": "respiratoryRate",
-        "op": "gte",
-        "value": 24
+        "all": [
+          {
+            "fact": "age",
+            "op": "gte",
+            "value": 5
+          },
+          {
+            "fact": "respiratoryRate",
+            "op": "gte",
+            "value": 24
+          }
+        ]
       },
       "label": "Faster breathing than expected",
       "recommendation": "Arrange a follow-up within three days and recheck the breathing rate. Refer sooner if the patient becomes short of breath.",
-      "explanation": "A raised breathing rate can be the first sign of a chest infection and is worth rechecking."
+      "explanation": "In a patient aged five or over, a raised breathing rate can be the first sign of a chest infection and is worth rechecking. Children under five are assessed against their own age thresholds."
     },
     {
       "id": "NUT-AMBER-01",
@@ -865,6 +1143,21 @@
       "label": "A symptom the patient describes as severe",
       "recommendation": "Arrange a follow-up within two days. Refer sooner if the symptom worsens or new danger signs appear.",
       "explanation": "A symptom the patient rates as severe is followed up even when the measurements look normal."
+    },
+    {
+      "id": "MAT-GREEN-01",
+      "name": "Antenatal care reminder",
+      "category": "maternal",
+      "riskLevel": "GREEN",
+      "priority": 10,
+      "referralRequired": false,
+      "condition": {
+        "fact": "symptom.pregnant",
+        "op": "present"
+      },
+      "label": "Pregnant: antenatal care and birth plan (WHO)",
+      "recommendation": "No danger signs today. WHO recommends at least eight antenatal care contacts: encourage her to attend the next one and to give birth at a health facility. Help her make a birth and emergency plan (where she will go, how she will get there, saving for the costs, who will go with her), tell her the danger signs that mean going immediately, and agree when you will visit again.",
+      "explanation": "WHO (2016) recommends a minimum of eight antenatal care contacts, and PCPNC (C14–C15) asks every pregnant woman to have a birth and emergency plan and to know the danger signs."
     }
   ]
 }

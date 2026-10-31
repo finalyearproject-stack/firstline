@@ -27,6 +27,11 @@ export interface SyncProgress {
   total: number;
   lastSyncAt: string | null;
   lastError: string | null;
+  /**
+   * The server refused the stored sign-in (it expired, or was revoked). Retrying cannot
+   * fix this; the VHT has to enter their password again. Records stay on the phone.
+   */
+  signInNeeded: boolean;
 }
 
 export interface SyncSummary {
@@ -52,10 +57,28 @@ function backoffFor(retryCount: number): number {
 
 export type ProgressListener = (progress: SyncProgress) => void;
 
+/** Parents before children, matching the server's own processing order. */
+const ENTITY_RANK: Record<StoredQueueEntry['entityType'], number> = {
+  patient: 0, visit: 1, vitals: 2, symptom: 2, triage: 3, referral: 4,
+};
+
+/** Ids of the records an entry needs on the server first: its visit and/or patient. */
+function parentsOf(entry: StoredQueueEntry): string[] {
+  if (entry.entityType === 'patient') return [];
+  try {
+    const payload = JSON.parse(entry.payload) as { patientId?: string; visitId?: string };
+    return [payload.visitId, payload.patientId].filter((id): id is string => typeof id === 'string');
+  } catch {
+    return [];
+  }
+}
+
 export class SyncEngine {
   private listeners = new Set<ProgressListener>();
   private running = false;
   private timer: ReturnType<typeof setTimeout> | null = null;
+  /** Set by stop(): no further retry is scheduled, even one already being computed. */
+  private stopped = false;
   private progress: SyncProgress = {
     state: 'IDLE',
     pending: 0,
@@ -63,6 +86,7 @@ export class SyncEngine {
     total: 0,
     lastSyncAt: null,
     lastError: null,
+    signInNeeded: false,
   };
 
   private readonly push: (items: unknown[]) => Promise<{ results: SyncResult[] }>;
@@ -90,6 +114,7 @@ export class SyncEngine {
 
   /** Starts automatic synchronisation: on reconnect, on an interval, and on demand. */
   start(): () => void {
+    this.stopped = false;
     const onOnline = () => {
       this.emit({ state: 'IDLE' });
       void this.run();
@@ -110,7 +135,7 @@ export class SyncEngine {
       window.removeEventListener('online', onOnline);
       window.removeEventListener('offline', onOffline);
       clearInterval(interval);
-      if (this.timer) clearTimeout(this.timer);
+      this.stop();
     };
   }
 
@@ -168,7 +193,7 @@ export class SyncEngine {
       const now = new Date().toISOString();
       await setMeta(META_KEYS.lastSyncAt, now);
       await this.refreshPending();
-      this.emit({ state: 'IDLE', lastSyncAt: now, lastError: null, sent: 0, total: 0 });
+      this.emit({ state: 'IDLE', lastSyncAt: now, lastError: null, signInNeeded: false, sent: 0, total: 0 });
       return summary;
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
@@ -180,7 +205,14 @@ export class SyncEngine {
     }
   }
 
-  /** Entries that are due now, oldest first. */
+  /**
+   * Entries that are due now, oldest first, together with anything they depend on.
+   *
+   * Each entry backs off on its own schedule, so after a run of failures a symptom can
+   * fall due while its visit is still waiting. Sent alone it would be turned away
+   * ("visit not received yet"). A due entry therefore brings its visit and patient into
+   * the same batch, and the batch is ordered parents first.
+   */
   private async nextBatch(): Promise<StoredQueueEntry[]> {
     const now = Date.now();
     const candidates = await db()
@@ -188,9 +220,20 @@ export class SyncEngine {
       .anyOf('PENDING', 'SYNCING')
       .toArray();
 
-    return candidates
-      .filter((entry) => entry.nextAttemptAt <= now)
-      .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+    const byEntity = new Map(candidates.map((entry) => [entry.entityId, entry]));
+    const chosen = new Map<string, StoredQueueEntry>();
+    const include = (entry: StoredQueueEntry) => {
+      if (chosen.has(entry.id)) return;
+      chosen.set(entry.id, entry);
+      for (const parentId of parentsOf(entry)) {
+        const parent = byEntity.get(parentId);
+        if (parent) include(parent);
+      }
+    };
+    for (const entry of candidates) if (entry.nextAttemptAt <= now) include(entry);
+
+    return [...chosen.values()]
+      .sort((a, b) => ENTITY_RANK[a.entityType] - ENTITY_RANK[b.entityType] || a.createdAt.localeCompare(b.createdAt))
       .slice(0, BATCH_SIZE);
   }
 
@@ -228,7 +271,10 @@ export class SyncEngine {
         })),
       );
       counts.failed = batch.length;
-      this.emit({ state: navigator.onLine ? 'ERROR' : 'OFFLINE', lastError: message });
+      // Checked by shape rather than by class so the engine does not depend on the HTTP
+      // client (the API client's ApiError sets it for a 401).
+      const signInNeeded = (error as { isAuthFailure?: unknown }).isAuthFailure === true;
+      this.emit({ state: navigator.onLine ? 'ERROR' : 'OFFLINE', lastError: message, signInNeeded });
       return counts;
     }
 
@@ -334,6 +380,7 @@ export class SyncEngine {
    * timer, and previously had no way to cancel it.
    */
   stop(): void {
+    this.stopped = true;
     if (this.timer) {
       clearTimeout(this.timer);
       this.timer = null;
@@ -343,16 +390,32 @@ export class SyncEngine {
   /** Wakes the engine when the earliest backed-off entry becomes due. */
   private scheduleNextAttempt(): void {
     if (this.timer) clearTimeout(this.timer);
+    if (this.stopped) return;
 
     void (async () => {
       const entries = await db().queue.where('status').equals('PENDING').toArray();
-      if (entries.length === 0) return;
+      // stop() may have been called while the queue was being read; arming a timer now
+      // would wake an engine that was told to stop (e.g. after sign-out).
+      if (this.stopped || entries.length === 0) return;
 
       const soonest = Math.min(...entries.map((e) => e.nextAttemptAt));
       const delay = Math.max(1_000, Math.min(soonest - Date.now(), MAX_BACKOFF_MS));
 
       this.timer = setTimeout(() => void this.run(), delay);
     })();
+  }
+
+  /**
+   * A run the VHT asked for ("Send now", or just after signing in again): entries waiting
+   * out a backoff are made due at once. Backoff exists to stop many phones retrying in
+   * the same instant on their own; a person tapping a button is not that, and making them
+   * wait minutes after fixing the problem would look like nothing happened.
+   */
+  async runNow(): Promise<SyncSummary | null> {
+    const waiting = await db().queue.where('status').equals('PENDING').toArray();
+    const now = Date.now();
+    await db().queue.bulkPut(waiting.map((entry) => ({ ...entry, nextAttemptAt: Math.min(entry.nextAttemptAt, now) })));
+    return this.run();
   }
 
   /** Clears the parked failures after a CHW or supervisor has reviewed them. */

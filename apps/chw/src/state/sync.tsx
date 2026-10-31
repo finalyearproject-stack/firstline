@@ -39,6 +39,7 @@ export function SyncProvider({ children }: { children: ReactNode }) {
     total: 0,
     lastSyncAt: null,
     lastError: null,
+    signInNeeded: false,
   });
 
   // The engine is created once. It reads the token through a ref so a refreshed token
@@ -88,7 +89,7 @@ export function SyncProvider({ children }: { children: ReactNode }) {
       // The live count always wins over the engine's snapshot.
       progress: { ...progress, pending },
       syncNow: async () => {
-        await engine.run();
+        await engine.runNow();
       },
       retryFailed: () => engine.retryFailed(),
     }),

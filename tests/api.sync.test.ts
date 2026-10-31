@@ -234,6 +234,41 @@ describe('authorisation during sync', () => {
     expect(res.body.data.results[0].message).toMatch(/not been received yet/i);
   });
 
+  it('stores a record that arrived before its visit once the visit arrives (no lost vitals)', async () => {
+    const patient = buildPatient(chw.id);
+    const visit = buildVisit(patient.id, chw.id);
+    const vitals = buildVitals(visit.id);
+
+    // The vitals arrive first, on their own: turned away, because the visit is missing.
+    const early = await push([syncItem('vitals', vitals)]).expect(200);
+    expect(early.body.data.results[0].status).toBe('REJECTED');
+    expect(early.body.data.results[0].message).toMatch(/not been received yet/i);
+
+    // The same vitals, with the same key, come again together with their visit.
+    const later = await push([syncItem('patient', patient), syncItem('visit', visit), syncItem('vitals', vitals)]).expect(200);
+    expect(later.body.data.results.map((r: { status: string }) => r.status)).toEqual(['APPLIED', 'APPLIED', 'APPLIED']);
+
+    // Regression: the first refusal used to leave a receipt, so the retry was answered
+    // "already received" and the device marked vitals as sent that were never stored.
+    const stored = await ctx.db.get<{ n: number }>('SELECT COUNT(*) AS n FROM vital_signs WHERE visit_id = ?', [visit.id]);
+    expect(Number(stored?.n)).toBe(1);
+  });
+
+  it('refuses a record again on replay rather than calling it a duplicate', async () => {
+    const otherPatient = buildPatient(otherChw.id);
+    const otherVisit = buildVisit(otherPatient.id, otherChw.id);
+    const otherToken = await login(ctx.app, otherChw.username);
+    await request(ctx.app).post('/api/v1/sync').set(bearer(otherToken))
+      .send({ clientTime: new Date().toISOString(), items: [syncItem('patient', otherPatient), syncItem('visit', otherVisit)] })
+      .expect(200);
+
+    const intruding = syncItem('vitals', buildVitals(otherVisit.id));
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      const res = await push([intruding]).expect(200);
+      expect(res.body.data.results[0].status).toBe('REJECTED');
+    }
+  });
+
   it('refuses a sync push from a role without the permission', async () => {
     await createTestUser(ctx.db, { username: 'officer1', role: 'OFFICIAL' });
     const officer = await login(ctx.app, 'officer1');

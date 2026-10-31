@@ -143,6 +143,15 @@ export interface TriagePoint { date: string; RED: number; AMBER: number; GREEN: 
 
 export type TrendDirection = 'RISING' | 'FALLING' | 'STEADY' | 'NEW';
 
+/** Screenings by the focus the VHT chose, split by triage result. */
+export interface FocusStat {
+  focus: 'GENERAL' | 'FEVER' | 'COUGH' | 'BLOOD_PRESSURE' | 'PREGNANCY' | 'CHILD';
+  visits: number;
+  red: number;
+  amber: number;
+  green: number;
+}
+
 export interface SymptomTrend {
   symptomCode: string;
   symptomName: string;

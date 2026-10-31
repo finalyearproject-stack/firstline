@@ -1995,3 +1995,189 @@ a.list__item, :not(li) > .list__item {
 @media (prefers-reduced-motion: reduce) {
   .auth__brand, .auth__body, .toast, .toast__spin { animation: none; }
 }
+
+/* ============================================================ screening focus and VHT kit */
+
+/* Step 1: one large card per kind of screening. */
+.focus-list { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.focus-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  min-height: 72px;
+  padding: 12px 14px;
+  border: 1.5px solid var(--ink-200);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow-xs);
+  font: inherit;
+  color: var(--ink-900);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.14s ease, box-shadow 0.14s ease;
+}
+.focus-card:hover { border-color: var(--brand-600); }
+.focus-card:focus-visible { outline: 3px solid var(--brand-600); outline-offset: 2px; }
+.focus-card > svg:last-child { margin-left: auto; color: var(--ink-400); flex-shrink: 0; }
+.focus-card__text { display: grid; gap: 2px; }
+.focus-card__name { font-size: 16.5px; font-weight: 700; }
+.focus-card__hint { font-size: 13.5px; color: var(--ink-600); }
+
+.show-more { width: 100%; margin-bottom: 16px; }
+
+/* Breathing counter: the phone as the respiratory timer. */
+.breath__row { display: flex; gap: 10px; align-items: center; }
+.breath__row .input { max-width: 110px; }
+.breath__fast { color: var(--risk-red-ink); font-weight: 650; }
+.breath--running {
+  display: grid;
+  gap: 10px;
+  justify-items: center;
+  padding: 14px;
+  border-radius: var(--radius);
+  background: var(--tint-sky);
+}
+.breath__clock { display: flex; gap: 6px; align-items: center; font-weight: 700; color: var(--tint-sky-ink); }
+.breath__tap {
+  display: grid;
+  place-items: center;
+  gap: 4px;
+  width: 100%;
+  min-height: 150px;
+  border: 0;
+  border-radius: var(--radius);
+  background: var(--brand-700);
+  color: var(--white);
+  font: inherit;
+  font-weight: 650;
+  cursor: pointer;
+  touch-action: manipulation;
+  user-select: none;
+}
+.breath__tap:active { transform: scale(0.98); }
+.breath__count { font-size: 48px; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; }
+
+/* MUAC: the swatch is the literal colour printed on the tape, in either theme. */
+.muac { display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+.muac__swatch { width: 14px; height: 14px; border-radius: 4px; box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.15); }
+.muac--RED .muac__swatch { background: #d62828; }
+.muac--YELLOW .muac__swatch { background: #f2c230; }
+.muac--GREEN .muac__swatch { background: #2a9d4b; }
+
+/* Referral letter: monospaced so it reads like a form and copies cleanly. */
+.letter {
+  margin: 0 0 12px;
+  padding: 14px;
+  overflow-x: auto;
+  border-radius: 10px;
+  background: var(--ink-50);
+  font-family: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+  font-size: 12.5px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--ink-900);
+}
+.linkish { cursor: pointer; color: var(--brand-700); font-weight: 650; }
+
+/* Printing a letter prints only the letter. */
+@media print {
+  body * { visibility: hidden; }
+  .letter-card, .letter-card .letter { visibility: visible; }
+  .letter-card { position: absolute; inset: 0 auto auto 0; width: 100%; border: 0; box-shadow: none; }
+  .letter-card > :not(.letter) { display: none; }
+  .letter { background: none; font-size: 12pt; color: #000; }
+}
+
+/* WHO antenatal contacts: eight dots by week, past ones filled, the next one ringed. */
+.anc { margin: 16px 0 4px; }
+.anc__track { display: flex; justify-content: space-between; gap: 4px; margin: 6px 0 10px; padding: 0; list-style: none; }
+.anc__dot { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; border: 1.5px solid var(--ink-200); font-size: 11.5px; font-weight: 700; color: var(--ink-600); font-variant-numeric: tabular-nums; }
+.anc__dot--past { background: var(--ink-200); border-color: var(--ink-200); color: var(--ink-900); }
+.anc__dot--next { border: 2.5px solid var(--brand-600); color: var(--brand-700); background: var(--surface); }
+
+/* ============================================================ home shortcuts and screening setup */
+
+/* "Screen for…": one tap from home into a screening with its focus already chosen. */
+.shortcut-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 0 0 16px; padding: 0; list-style: none; }
+.shortcut {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 60px;
+  padding: 10px 12px;
+  border: 1.5px solid var(--ink-200);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow-xs);
+  color: var(--ink-900);
+  text-decoration: none;
+  font-size: 14.5px;
+  font-weight: 650;
+  line-height: 1.25;
+}
+.shortcut:hover { border-color: var(--brand-600); }
+.shortcut:focus-visible { outline: 3px solid var(--brand-600); outline-offset: 2px; }
+.shortcut .chip-icon { flex-shrink: 0; }
+
+/* New screening: two numbered sections and one button. */
+.setup { margin-bottom: 22px; }
+.setup__head { display: flex; align-items: center; gap: 10px; margin: 0 0 12px; font-size: 17px; }
+.setup__num {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--brand-700);
+  color: var(--white);
+  font-size: 13.5px;
+  font-weight: 750;
+  flex-shrink: 0;
+}
+.setup__go { position: sticky; bottom: 12px; padding-top: 4px; }
+.setup__go .btn { width: 100%; }
+.list__item--pick { border: 1.5px solid transparent; }
+.list__item--pick[aria-checked='true'] {
+  border-color: var(--brand-600);
+  background: var(--tint-teal);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand-600) 12%, transparent);
+}
+
+/* Facility picker: name and level, emergency-capable levels marked. */
+.facility__list { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.facility__option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  min-height: 52px;
+  padding: 10px 14px;
+  border: 1.5px solid var(--ink-200);
+  border-radius: 12px;
+  background: var(--surface);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink-900);
+  text-align: left;
+  cursor: pointer;
+}
+.facility__option[aria-checked='true'] {
+  border-color: var(--brand-600);
+  background: var(--tint-teal);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand-600) 12%, transparent);
+}
+.facility__level {
+  flex-shrink: 0;
+  padding: 3px 9px;
+  border-radius: var(--radius-pill);
+  background: var(--ink-100);
+  color: var(--ink-600);
+  font-size: 12px;
+  font-weight: 750;
+}
+.facility__level--emergency { background: var(--tint-rose); color: var(--tint-rose-ink); }
+.facility__warn { margin-top: 10px; color: var(--risk-amber-ink); font-weight: 600; }

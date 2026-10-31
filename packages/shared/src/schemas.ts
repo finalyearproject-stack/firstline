@@ -9,9 +9,12 @@
 import { z } from 'zod';
 import {
   CONSENT_STATES,
+  MUAC_COLOURS,
+  RDT_RESULTS,
   REFERRAL_STATES,
   RISK_LEVELS,
   ROLES,
+  SCREENING_FOCUSES,
   SEVERITIES,
   SEXES,
   SYNCABLE_ENTITIES,
@@ -36,6 +39,7 @@ export const VITAL_BOUNDS = {
   oxygenSaturation: { min: 50, max: 100, unit: '%' },
   respiratoryRate: { min: 5, max: 90, unit: '/min' },
   bloodGlucoseMmol: { min: 1, max: 40, unit: 'mmol/L' },
+  pregnancyWeeks: { min: 4, max: 44, unit: 'weeks' },
 } as const;
 
 function bounded(key: keyof typeof VITAL_BOUNDS) {
@@ -93,6 +97,8 @@ export const visitSchema = z.object({
   visitDate: isoDate,
   village: z.string().trim().min(1).max(120),
   notes: z.string().trim().max(2000).nullable(),
+  // Optional: an app that predates screening focus does not send it.
+  focus: z.enum(SCREENING_FOCUSES).nullable().optional(),
   createdAt: isoDate,
   updatedAt: isoDate,
   version: z.number().int().min(1),
@@ -110,6 +116,10 @@ export const vitalsSchema = z.object({
   oxygenSaturation: bounded('oxygenSaturation'),
   respiratoryRate: bounded('respiratoryRate'),
   bloodGlucoseMmol: bounded('bloodGlucoseMmol'),
+  muacColour: z.enum(MUAC_COLOURS).nullable().optional(),
+  malariaRdt: z.enum(RDT_RESULTS).nullable().optional(),
+  oedema: z.boolean().nullable().optional(),
+  pregnancyWeeks: bounded('pregnancyWeeks').refine((w) => w === null || Number.isInteger(w), 'whole weeks').optional(),
   recordedAt: isoDate,
 }).refine(
   (v) => v.systolicBp === null || v.diastolicBp === null || v.systolicBp > v.diastolicBp,

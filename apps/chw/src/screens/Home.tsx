@@ -7,7 +7,9 @@
  */
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Screen } from '../components/shell.tsx';
+import { FOCUS_CATALOGUE } from '@rhm/triage';
+import { RiskBadge, Screen, SyncBadge, initials } from '../components/shell.tsx';
+import { FOCUS_ICONS, FOCUS_TINT, focusName } from '../components/screening-parts.tsx';
 import {
   IconActivity,
   IconAlert,
@@ -22,15 +24,32 @@ import {
 } from '../components/icons.tsx';
 import { CountUp } from '../components/count-up.tsx';
 import { Sparkbars, hasSignal } from '../components/spark.tsx';
-import { deviceStats, type DeviceStats } from '../db/repository.ts';
-import { useSession } from '../state/session.tsx';
+import { deviceStats, listRecentScreenings, type DeviceStats, type RecentScreening } from '../db/repository.ts';
+import { useSession, useUnlocked } from '../state/session.tsx';
 import { useSync } from '../state/sync.tsx';
 
+/**
+ * Greeting in Luganda first, the language of the demonstration villages, with English
+ * after it: "Wasuze otya" (how did you sleep) in the morning, "Osiibye otya" (how has
+ * your day been) after midday.
+ */
 function greetingFor(date = new Date()): string {
   const hour = date.getHours();
-  if (hour < 12) return 'Good morning';
-  if (hour < 17) return 'Good afternoon';
-  return 'Good evening';
+  if (hour < 12) return 'Wasuze otya · Good morning';
+  if (hour < 17) return 'Osiibye otya · Good afternoon';
+  return 'Osiibye otya · Good evening';
+}
+
+/** "Saturday, 31 October": where the VHT is in their week, at a glance. */
+function todayLabel(date = new Date()): string {
+  return date.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+}
+
+function timeLabel(iso: string): string {
+  const when = new Date(iso);
+  const sameDay = when.toDateString() === new Date().toDateString();
+  const time = when.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+  return sameDay ? `Today ${time}` : `${when.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} ${time}`;
 }
 
 /** First name only: the header is tight, and the full name is on the profile. */
@@ -40,12 +59,15 @@ function firstNameOf(full: string | undefined): string {
 
 export function HomeScreen() {
   const { user, lock } = useSession();
+  const { key } = useUnlocked();
   const { progress, syncNow } = useSync();
   const [stats, setStats] = useState<DeviceStats | null>(null);
+  const [recent, setRecent] = useState<RecentScreening[] | null>(null);
 
   useEffect(() => {
     void deviceStats().then(setStats);
-  }, [progress.pending, progress.state]);
+    void listRecentScreenings(key).then(setRecent);
+  }, [key, progress.pending, progress.state]);
 
   const todayCount = stats?.visitsToday ?? 0;
 
@@ -76,27 +98,78 @@ export function HomeScreen() {
           </em>
         </h1>
         <div className="muted small" style={{ marginTop: 8 }}>
-          {user?.village ? `${user.village} · ` : ''}
-          {user?.chwIdentifier ?? ''}
+          {todayLabel()}
+          {user?.village ? ` · ${user.village}` : ''}
+          {user?.chwIdentifier ? ` · ${user.chwIdentifier}` : ''}
         </div>
       </div>
 
       {/* The primary action, given the weight the reference promo cards get — except the
           action here is clinical work, not an advertisement. */}
-      <Link to="/patients" className="hero">
+      <Link to="/screen/new" className="hero">
         <div className="hero__label">Start here</div>
         <div className="hero__title">Screen a patient</div>
         <div className="hero__sub">
-          Find someone already registered, or add a new patient.
+          Choose what you are screening for, then who. New patients can be added there.
         </div>
         <span className="hero__cta">
-          Find a patient <IconArrowRight size={18} />
+          Start a screening <IconArrowRight size={18} />
         </span>
       </Link>
+
+      <div className="section-head">
+        <h2>Screen for…</h2>
+      </div>
+      <ul className="shortcut-grid">
+        {FOCUS_CATALOGUE.map((option) => {
+          const Icon = FOCUS_ICONS[option.focus];
+          return (
+            <li key={option.focus}>
+              <Link to={`/screen/new?focus=${option.focus}`} className="shortcut">
+                <span className={`chip-icon chip-icon--sm chip-icon--${FOCUS_TINT[option.focus]}`}><Icon size={18} /></span>
+                <span className="shortcut__name">{option.name}</span>
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
 
       <Link to="/patients/new" className="btn btn--secondary mb-16">
         <IconPlus size={19} /> Register a new patient
       </Link>
+
+      {recent !== null && recent.length > 0 && (
+        <>
+          <div className="section-head">
+            <h2>Recent screenings</h2>
+            <Link to="/patients" className="section-head__action">All patients ›</Link>
+          </div>
+          <ul className="list mb-16">
+            {recent.map((item) => (
+              <li key={item.visitId}>
+                <Link to={item.patient ? `/patients/${item.patient.id}` : '/patients'} className="list__item">
+                  <span className="list__avatar" aria-hidden="true">
+                    {item.patient ? initials(item.patient.firstName, item.patient.lastName) : '?'}
+                  </span>
+                  <span className="list__body">
+                    <span className="list__title">
+                      {item.patient ? `${item.patient.firstName} ${item.patient.lastName}` : 'Patient'}
+                    </span>
+                    <span className="list__meta">{focusName(item.focus)} · {timeLabel(item.visitDate)}</span>
+                    {(item.riskLevel || item.syncStatus !== 'SYNCED') && (
+                      <span className="list__tags">
+                        {item.riskLevel && <RiskBadge level={item.riskLevel} />}
+                        {item.syncStatus !== 'SYNCED' && <SyncBadge status={item.syncStatus} />}
+                      </span>
+                    )}
+                  </span>
+                  <span className="list__chevron"><IconChevronRight size={19} /></span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
 
       <div className="section-head">
         <h2>On this phone</h2>

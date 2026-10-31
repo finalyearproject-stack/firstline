@@ -7,6 +7,8 @@ import {
   awarenessContentSchema,
   composeReferralSms,
   auditSmsBody,
+  MUAC_COLOURS,
+  RDT_RESULTS,
   referralSchema,
   uuid,
   type Referral,
@@ -51,6 +53,42 @@ export async function loadActiveRuleSet(db: Db): Promise<RuleSet> {
 // Triage
 // ---------------------------------------------------------------------------
 
+/**
+ * Keeps an unapproved deployment on the newest shipped template.
+ *
+ * Run at boot. While no clinical authority has approved a rule set, the active one is
+ * just the template that came with the build, and an older copy left in the database
+ * would hide rules added since (this happened once: the dashboard showed a 23-rule
+ * version after the template had grown). An APPROVED active rule set is never
+ * replaced: once a health authority has signed off, only an administrator publishing a
+ * new version changes what is in force.
+ *
+ * Returns the version installed, or null when nothing changed.
+ */
+export async function installShippedRuleSet(db: Db): Promise<string | null> {
+  const active = await db.get<{ version: string; approved_by: string | null }>(
+    'SELECT version, approved_by FROM triage_rulesets WHERE active = ? ORDER BY created_at DESC',
+    [fromBool(true)],
+  );
+  if (active?.approved_by) return null;
+  if (active?.version === DEFAULT_RULESET.rulesetVersion) return null;
+
+  const shipped = await db.get('SELECT id FROM triage_rulesets WHERE version = ?', [DEFAULT_RULESET.rulesetVersion]);
+  await db.transaction(async (tx) => {
+    await tx.run('UPDATE triage_rulesets SET active = ?', [fromBool(false)]);
+    if (shipped) {
+      await tx.run('UPDATE triage_rulesets SET active = ? WHERE version = ?', [fromBool(true), DEFAULT_RULESET.rulesetVersion]);
+    } else {
+      await tx.run(
+        'INSERT INTO triage_rulesets (id, version, definition, active, approved_by, approved_on, created_by, created_at)' +
+          ' VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+        [uuid(), DEFAULT_RULESET.rulesetVersion, JSON.stringify(DEFAULT_RULESET), fromBool(true), null, null, null, new Date().toISOString()],
+      );
+    }
+  });
+  return DEFAULT_RULESET.rulesetVersion;
+}
+
 const triageFactsSchema = z.object({
   age: z.number().int().min(0).max(130).nullable().optional(),
   sex: z.enum(['FEMALE', 'MALE', 'OTHER']).nullable().optional(),
@@ -62,6 +100,10 @@ const triageFactsSchema = z.object({
   oxygenSaturation: z.number().nullable().optional(),
   respiratoryRate: z.number().nullable().optional(),
   bloodGlucoseMmol: z.number().nullable().optional(),
+  muacColour: z.enum(MUAC_COLOURS).nullable().optional(),
+  malariaRdt: z.enum(RDT_RESULTS).nullable().optional(),
+  oedema: z.boolean().nullable().optional(),
+  pregnancyWeeks: z.number().int().min(4).max(44).nullable().optional(),
   symptoms: z
     .array(
       z.object({

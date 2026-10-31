@@ -25,6 +25,7 @@ export const SYMPTOM_CATALOGUE: SymptomDefinition[] = [
   { code: 'dizziness', name: 'Dizziness', category: 'General', icon: 'D', asksDuration: true },
   { code: 'weight_loss', name: 'Losing weight', category: 'General', icon: 'W', asksDuration: true },
   { code: 'fatigue', name: 'Very tired', category: 'General', icon: 'T', asksDuration: true },
+  { code: 'night_sweats', name: 'Night sweats', category: 'General', icon: 'Z', asksDuration: true },
 
   { code: 'cough', name: 'Cough', category: 'Chest', icon: 'K', asksDuration: true },
   { code: 'difficulty_breathing', name: 'Hard to breathe', category: 'Chest', icon: 'L', asksDuration: true },
@@ -43,6 +44,10 @@ export const SYMPTOM_CATALOGUE: SymptomDefinition[] = [
   { code: 'pregnant', name: 'Pregnant', category: 'Maternal', icon: 'M', asksDuration: false, booleanOnly: true },
   { code: 'vaginal_bleeding', name: 'Bleeding', category: 'Maternal', icon: 'A', asksDuration: true },
   { code: 'reduced_fetal_movement', name: 'Baby moving less', category: 'Maternal', icon: 'G', asksDuration: true },
+  { code: 'blurred_vision', name: 'Blurred vision', category: 'Maternal', icon: 'E', asksDuration: true },
+  { code: 'swollen_face_hands', name: 'Swollen fingers, face or legs', category: 'Maternal', icon: 'O', asksDuration: true },
+  { code: 'too_weak_to_get_up', name: 'Too weak to get out of bed', category: 'Maternal', icon: 'Y', asksDuration: false, booleanOnly: true },
+  { code: 'feels_ill', name: 'Feels ill', category: 'Maternal', icon: 'I', asksDuration: true },
 ];
 
 export function symptomByCode(code: string): SymptomDefinition | undefined {

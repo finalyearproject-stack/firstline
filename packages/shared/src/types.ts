@@ -35,6 +35,22 @@ export type Severity = (typeof SEVERITIES)[number];
 export const USER_STATES = ['ACTIVE', 'SUSPENDED'] as const;
 export type UserStatus = (typeof USER_STATES)[number];
 
+/**
+ * What a screening is for. The VHT picks one before starting; it decides which
+ * questions are shown, never which rules run — every screening is still evaluated
+ * against the whole rule set, so a danger sign outside the focus is not missed.
+ */
+export const SCREENING_FOCUSES = ['GENERAL', 'FEVER', 'COUGH', 'BLOOD_PRESSURE', 'PREGNANCY', 'CHILD'] as const;
+export type ScreeningFocus = (typeof SCREENING_FOCUSES)[number];
+
+/** Reading on the colour-coded MUAC tape in the VHT kit (MoH VHT guidelines 2010, s10). */
+export const MUAC_COLOURS = ['RED', 'YELLOW', 'GREEN'] as const;
+export type MuacColour = (typeof MUAC_COLOURS)[number];
+
+/** Malaria rapid diagnostic test. A test that was not done is recorded as null. */
+export const RDT_RESULTS = ['POSITIVE', 'NEGATIVE'] as const;
+export type RdtResult = (typeof RDT_RESULTS)[number];
+
 /** Entity kinds that may travel through the sync outbox. */
 export const SYNCABLE_ENTITIES = [
   'patient',
@@ -94,6 +110,8 @@ export interface Visit {
   visitDate: string;
   village: string;
   notes: string | null;
+  /** Absent on visits recorded before screening focus existed; read as GENERAL. */
+  focus?: ScreeningFocus | null;
   createdAt: string;
   updatedAt: string;
   version: number;
@@ -113,6 +131,15 @@ export interface VitalSigns {
   respiratoryRate: number | null;
   /** Fasting/random blood glucose in mmol/L, where a glucometer is available. */
   bloodGlucoseMmol: number | null;
+  /*
+   * Kit measurements from the VHT guidelines. Optional so that records made by an
+   * older app version, which never sent them, remain valid.
+   */
+  muacColour?: MuacColour | null;
+  malariaRdt?: RdtResult | null;
+  /** Swelling of both feet (bilateral pitting oedema), a sign of severe malnutrition. */
+  oedema?: boolean | null;
+  pregnancyWeeks?: number | null;
   recordedAt: string;
   syncStatus: SyncStatus;
 }

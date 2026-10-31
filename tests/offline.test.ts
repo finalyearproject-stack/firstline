@@ -68,6 +68,18 @@ let dbName: string;
 let engine: SyncEngine;
 
 /**
+ * Every engine a test creates is stopped afterwards. An engine schedules its own retry
+ * after each run; one left running would wake during a later test and push that test's
+ * outbox alongside the test's own engine, which made one test intermittently fail
+ * under load.
+ */
+const engines: SyncEngine[] = [];
+function track(created: SyncEngine): SyncEngine {
+  engines.push(created);
+  return created;
+}
+
+/**
  * The push function the engine uses. When "offline" it rejects exactly as fetch does,
  * so the engine's failure handling is exercised rather than bypassed.
  */
@@ -139,11 +151,11 @@ beforeEach(async () => {
   await database.open();
 
   key = await deriveKey('4821', randomSalt());
-  engine = new SyncEngine(push as never);
+  engine = track(new SyncEngine(push as never));
 });
 
 afterEach(async () => {
-  engine.stop();
+  for (const created of engines.splice(0)) created.stop();
   database.close();
   setDatabase(null);
   await new Promise<void>((resolve) => server.close(() => resolve()));
@@ -218,6 +230,7 @@ describe('the CHW can work with no network at all (spec s4)', () => {
     );
 
     const bundle = await saveScreening(key, {
+      focus: 'GENERAL',
       patientId: patient.id,
       chwId,
       village: 'Kasangati',
@@ -265,6 +278,7 @@ describe('the CHW can work with no network at all (spec s4)', () => {
 
     for (const systolic of [150, 158, 142]) {
       await saveScreening(key, {
+        focus: 'GENERAL',
         patientId: patient.id, chwId, village: 'Kasangati', notes: null,
         vitals: { systolicBp: systolic, diastolicBp: 92, temperatureC: null, weightKg: null,
           pulseBpm: null, oxygenSaturation: null, respiratoryRate: null, bloodGlucoseMmol: null },
@@ -288,6 +302,7 @@ describe('the CHW can work with no network at all (spec s4)', () => {
     });
 
     await saveScreening(key, {
+      focus: 'GENERAL',
       patientId: patient.id, chwId, village: 'Kasangati', notes: null,
       vitals: { systolicBp: 185, diastolicBp: 120, temperatureC: null, weightKg: null,
         pulseBpm: null, oxygenSaturation: null, respiratoryRate: null, bloodGlucoseMmol: null },
@@ -307,10 +322,10 @@ describe('the CHW can work with no network at all (spec s4)', () => {
 
   it('never blocks on the network: no request is attempted while offline', async () => {
     const attempts: unknown[][] = [];
-    const watched = new SyncEngine(async (items) => {
+    const watched = track(new SyncEngine(async (items) => {
       attempts.push(items);
       throw new TypeError('Failed to fetch');
-    });
+    }));
 
     await createPatient(key, chwId, {
       firstName: 'Zainab', lastName: 'Sani', phone: null, age: 44,
@@ -333,6 +348,7 @@ describe('zero data loss (spec s13)', () => {
     });
 
     await saveScreening(key, {
+      focus: 'GENERAL',
       patientId: patient.id, chwId, village: 'Kasangati', notes: 'Household visit',
       vitals: { systolicBp: 165, diastolicBp: 100, temperatureC: 36.8, weightKg: 68,
         pulseBpm: 88, oxygenSaturation: null, respiratoryRate: null, bloodGlucoseMmol: null },
@@ -381,9 +397,9 @@ describe('zero data loss (spec s13)', () => {
     goOnline();
 
     // A push that hangs, then the process dies: entries are left mid-flight.
-    const stalled = new SyncEngine(
+    const stalled = track(new SyncEngine(
       () => new Promise(() => {}) as Promise<{ results: never[] }>,
-    );
+    ));
     void stalled.run();
     await new Promise((resolve) => setTimeout(resolve, 50));
 
@@ -395,7 +411,7 @@ describe('zero data loss (spec s13)', () => {
     expect(Number(stored?.n)).toBe(0);
 
     // A fresh engine picks the work straight back up.
-    const resumed = new SyncEngine(push as never);
+    const resumed = track(new SyncEngine(push as never));
     await resumed.run();
     expect(await pendingCount()).toBe(0);
   });
@@ -404,9 +420,9 @@ describe('zero data loss (spec s13)', () => {
     const patient = await captureEncounter();
     goOnline();
 
-    const failing = new SyncEngine(async () => {
+    const failing = track(new SyncEngine(async () => {
       throw new TypeError('Failed to fetch');
-    });
+    }));
     await failing.run();
 
     // Nothing lost, nothing sent.
@@ -421,21 +437,88 @@ describe('zero data loss (spec s13)', () => {
     await captureEncounter();
     goOnline();
 
-    const erroring = new SyncEngine(async () => {
+    const erroring = track(new SyncEngine(async () => {
       throw new Error('HTTP 503');
-    });
+    }));
     await erroring.run();
 
     expect(await pendingCount()).toBe(6);
+  });
+
+  it('asks the VHT to sign in again when the server rejects the stored sign-in', async () => {
+    await captureEncounter();
+    goOnline();
+
+    // What the API client throws for a 401: an expired or revoked session.
+    const expired = Object.assign(new Error('Your session has expired. Please sign in again.'), { isAuthFailure: true });
+    const rejected = track(new SyncEngine(async () => { throw expired; }));
+    let last: { state: string; signInNeeded: boolean } | null = null;
+    const unsubscribe = rejected.subscribe((progress) => { last = progress; });
+    await rejected.run();
+    unsubscribe();
+
+    expect(last).toMatchObject({ state: 'ERROR', signInNeeded: true });
+    expect(await pendingCount()).toBe(6); // nothing lost while waiting for the password
+  });
+
+  it('sends a record together with its visit when only the record has fallen due', async () => {
+    await captureEncounter();
+    goOnline();
+
+    // After failures every entry backs off on its own schedule. Make only the symptom due,
+    // with its visit and patient still waiting, the situation that used to strand it.
+    const entries = await db().queue.toArray();
+    await db().queue.bulkPut(entries.map((entry) => ({
+      ...entry,
+      nextAttemptAt: entry.entityType === 'symptom' ? 0 : Date.now() + 3_600_000,
+    })));
+
+    const summary = await engine.run();
+    expect(summary).toMatchObject({ rejected: 0 });
+
+    const symptoms = await ctx.db.get<{ n: number }>('SELECT COUNT(*) AS n FROM symptoms');
+    const visits = await ctx.db.get<{ n: number }>('SELECT COUNT(*) AS n FROM visits');
+    expect(Number(symptoms?.n)).toBe(1);
+    expect(Number(visits?.n)).toBe(1);
+  });
+
+  it('sends at once when the VHT asks, even while entries are waiting out a backoff', async () => {
+    await captureEncounter();
+    goOffline();
+    await engine.run(); // declined while offline
+    goOnline();
+
+    // A failed attempt pushes every entry's next try into the future.
+    const failing = track(new SyncEngine(async () => { throw new TypeError('Failed to fetch'); }));
+    await failing.run();
+    expect(await pendingCount()).toBe(6);
+    expect(await engine.run()).toMatchObject({ applied: 0 }); // nothing due yet
+
+    // "Send now" (or signing in again) does not make the VHT wait out the backoff.
+    expect(await engine.runNow()).toMatchObject({ applied: 6 });
+    expect(await pendingCount()).toBe(0);
+  });
+
+  it('does not ask for a password when the network merely failed', async () => {
+    await captureEncounter();
+    goOnline();
+
+    const failing = track(new SyncEngine(async () => { throw new TypeError('Failed to fetch'); }));
+    let last: { signInNeeded: boolean } | null = null;
+    const unsubscribe = failing.subscribe((progress) => { last = progress; });
+    await failing.run();
+    unsubscribe();
+
+    expect(last).toMatchObject({ signInNeeded: false });
   });
 
   it('reports a failed run as an error, not as a successful sync', async () => {
     await captureEncounter();
     goOnline();
 
-    const erroring = new SyncEngine(async () => {
+    const erroring = track(new SyncEngine(async () => {
       throw new Error('HTTP 503');
-    });
+    }));
     let last: { state: string; lastSyncAt: string | null; lastError: string | null } | null = null;
     const unsubscribe = erroring.subscribe((progress) => { last = progress; });
     await erroring.run();
@@ -456,6 +539,7 @@ describe('synchronisation when the network returns (spec s12)', () => {
     });
 
     await saveScreening(key, {
+      focus: 'GENERAL',
       patientId: patient.id, chwId, village: 'Kasangati', notes: 'Household visit',
       vitals: { systolicBp: 165, diastolicBp: 100, temperatureC: 36.8, weightKg: 68,
         pulseBpm: 88, oxygenSaturation: null, respiratoryRate: null, bloodGlucoseMmol: null },
@@ -505,6 +589,7 @@ describe('synchronisation when the network returns (spec s12)', () => {
       sex: 'MALE', village: 'Kasangati', consentStatus: 'GRANTED',
     });
     await saveScreening(key, {
+      focus: 'GENERAL',
       patientId: patient.id, chwId, village: 'Kasangati', notes: null,
       vitals: { systolicBp: 150, diastolicBp: 92, temperatureC: null, weightKg: null,
         pulseBpm: null, oxygenSaturation: null, respiratoryRate: null, bloodGlucoseMmol: null },
@@ -519,12 +604,12 @@ describe('synchronisation when the network returns (spec s12)', () => {
     // The server stores the batch, then the response is lost on the way back —
     // the classic case that creates duplicates in a naive implementation.
     let attempt = 0;
-    const flaky = new SyncEngine(async (items) => {
+    const flaky = track(new SyncEngine(async (items) => {
       attempt += 1;
       const result = await push(items);
       if (attempt === 1) throw new TypeError('Failed to fetch'); // response lost
       return result;
-    });
+    }));
 
     await flaky.run(); // stores server-side, client never learns
 

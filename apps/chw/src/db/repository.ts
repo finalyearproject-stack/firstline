@@ -18,6 +18,7 @@ import {
   type ConsentStatus,
   type Patient,
   type Referral,
+  type ScreeningFocus,
   type Sex,
   type Severity,
   type SyncableEntity,
@@ -60,6 +61,7 @@ export interface VisitView {
   visitDate: string;
   village: string;
   notes: string | null;
+  focus: ScreeningFocus | null;
   createdAt: string;
   updatedAt: string;
   version: number;
@@ -329,6 +331,7 @@ export interface ScreeningInput {
   chwId: string;
   village: string;
   notes: string | null;
+  focus: ScreeningFocus;
   vitals: Omit<VitalSigns, 'id' | 'visitId' | 'recordedAt' | 'syncStatus'>;
   symptoms: Array<{
     symptomCode: string;
@@ -374,6 +377,7 @@ export async function saveScreening(
     visitDate: now,
     village: input.village,
     notes: input.notes,
+    focus: input.focus,
     createdAt: now,
     updatedAt: now,
     version: 1,
@@ -386,6 +390,7 @@ export async function saveScreening(
     chwId: input.chwId,
     visitDate: now,
     village: input.village,
+    focus: input.focus,
     sec: await sealJson(key, { notes: input.notes }),
     createdAt: now,
     updatedAt: now,
@@ -517,6 +522,7 @@ export async function getPatientHistory(key: CryptoKey, patientId: string): Prom
           visitDate: row.visitDate,
           village: row.village,
           notes: secret?.notes ?? null,
+          focus: row.focus ?? null,
           createdAt: row.createdAt,
           updatedAt: row.updatedAt,
           version: row.version,
@@ -699,6 +705,43 @@ export async function deviceStats(): Promise<DeviceStats> {
       ),
     },
   };
+}
+
+export interface RecentScreening {
+  visitId: string;
+  visitDate: string;
+  focus: ScreeningFocus | null;
+  riskLevel: TriageResult['riskLevel'] | null;
+  syncStatus: Patient['syncStatus'];
+  patient: PatientView | null;
+}
+
+/**
+ * The most recent screenings on this phone, newest first, with the patient's name
+ * decrypted for display. Only the few shown are decrypted.
+ */
+export async function listRecentScreenings(key: CryptoKey, limit = 5): Promise<RecentScreening[]> {
+  const database = db();
+  const visits = (await database.visits.toArray())
+    .sort((a, b) => b.visitDate.localeCompare(a.visitDate))
+    .slice(0, limit);
+
+  return Promise.all(
+    visits.map(async (visit) => {
+      const [triage, patient] = await Promise.all([
+        database.triage.where('visitId').equals(visit.id).first(),
+        getPatient(key, visit.patientId),
+      ]);
+      return {
+        visitId: visit.id,
+        visitDate: visit.visitDate,
+        focus: visit.focus ?? null,
+        riskLevel: triage?.riskLevel ?? null,
+        syncStatus: visit.syncStatus,
+        patient,
+      };
+    }),
+  );
 }
 
 export type { Sealed };

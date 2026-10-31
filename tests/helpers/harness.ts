@@ -166,7 +166,7 @@ export function buildTriage(visitId: string, overrides: Record<string, unknown> 
     triggeredLabels: ['Very high blood pressure together with a persistent headache'],
     recommendation: 'Refer the patient to the health facility immediately.',
     referralRequired: true,
-    rulesetVersion: '1.0.0-TEMPLATE',
+    rulesetVersion: '1.2.0-TEMPLATE',
     evaluationMs: 0.4,
     createdAt: nowIso(),
     ...overrides,

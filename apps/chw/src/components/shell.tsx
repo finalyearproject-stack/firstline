@@ -16,6 +16,7 @@ import {
   IconFollowUp,
   IconHome,
   IconLearn,
+  IconLock,
   IconPatients,
   type IconProps,
 } from './icons.tsx';
@@ -96,6 +97,7 @@ const records = (n: number) => `${n} record${n === 1 ? '' : 's'}`;
  */
 export function ConnectionPill({ aboveNav }: { aboveNav: boolean }) {
   const { progress, syncNow } = useSync();
+  const navigate = useNavigate();
   const { state, pending, sent, total, lastSyncAt } = progress;
   const placement = aboveNav ? 'above-nav' : 'bottom';
 
@@ -159,6 +161,32 @@ export function ConnectionPill({ aboveNav }: { aboveNav: boolean }) {
               have a signal.{pending > 0 && lastSent ? ` ${lastSent}.` : ''}
             </p>
             {dismiss}
+          </>
+        }
+      />
+    );
+  }
+
+  if (state === 'ERROR' && progress.signInNeeded) {
+    return (
+      <StatusPill
+        tone="error"
+        placement={placement}
+        icon={<IconLock size={20} />}
+        title="Sign in to send records"
+        sub={pending > 0 ? `${records(pending)} saved safely on this phone` : 'Your sign-in has expired'}
+        more={
+          <>
+            <p>
+              Your sign-in to the server has expired. Nothing is lost: enter your password once
+              and FirstLine will send everything.
+            </p>
+            <div className="toast__actions">
+              <button type="button" className="toast__dismiss toast__dismiss--primary" onClick={() => navigate('/sync')}>
+                Sign in
+              </button>
+              {dismiss}
+            </div>
           </>
         }
       />

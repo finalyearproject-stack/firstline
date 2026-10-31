@@ -17,6 +17,7 @@ import {
   getOverview,
   getReferralStats,
   getRiskByCategory,
+  getScreeningsByFocus,
   getSymptomTrends,
   getScreeningVolume,
   getSyncHealth,
@@ -151,11 +152,12 @@ export function dashboardRoutes(db: Db): Router {
     '/triage',
     asyncRoute(async (req, res) => {
       const range = resolveRange(req.query);
-      const [trend, byCategory] = await Promise.all([
+      const [trend, byCategory, byFocus] = await Promise.all([
         getTriageTrend(db, range),
         getRiskByCategory(db, range),
+        getScreeningsByFocus(db, range),
       ]);
-      res.json({ data: { trend, byCategory } });
+      res.json({ data: { trend, byCategory, byFocus } });
     }),
   );
 

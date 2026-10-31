@@ -7,10 +7,13 @@
  */
 import type {
   ConsentStatus,
+  MuacColour,
   Patient,
+  RdtResult,
   Referral,
   ReferralStatus,
   RiskLevel,
+  ScreeningFocus,
   Severity,
   Sex,
   Symptom,
@@ -72,6 +75,7 @@ export function mapVisit(row: Row): Visit {
     visitDate: row.visit_date as string,
     village: row.village as string,
     notes: (row.notes as string) ?? null,
+    focus: (row.focus as ScreeningFocus) ?? null,
     createdAt: row.created_at as string,
     updatedAt: row.updated_at as string,
     version: Number(row.version),
@@ -93,6 +97,10 @@ export function mapVitals(row: Row): VitalSigns {
     oxygenSaturation: num(row.oxygen_saturation),
     respiratoryRate: num(row.respiratory_rate),
     bloodGlucoseMmol: num(row.blood_glucose_mmol),
+    muacColour: (row.muac_colour as MuacColour) ?? null,
+    malariaRdt: (row.malaria_rdt as RdtResult) ?? null,
+    oedema: row.oedema === null || row.oedema === undefined ? null : toBool(row.oedema),
+    pregnancyWeeks: num(row.pregnancy_weeks),
     recordedAt: row.recorded_at as string,
     syncStatus: 'SYNCED',
   };
@@ -174,29 +182,35 @@ export async function upsertPatient(db: Db, p: Patient): Promise<void> {
 
 export async function upsertVisit(db: Db, v: Visit): Promise<void> {
   await db.run(
-    'INSERT INTO visits (id, patient_id, chw_id, visit_date, village, notes, created_at, updated_at, version)' +
-      ' VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)' +
+    'INSERT INTO visits (id, patient_id, chw_id, visit_date, village, notes, focus, created_at, updated_at, version)' +
+      ' VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)' +
       ' ON CONFLICT (id) DO UPDATE SET' +
-      '  visit_date = excluded.visit_date, village = excluded.village,' +
-      '  notes = excluded.notes, updated_at = excluded.updated_at, version = excluded.version',
-    [v.id, v.patientId, v.chwId, v.visitDate, v.village, v.notes, v.createdAt, v.updatedAt, v.version],
+      '  visit_date = excluded.visit_date, village = excluded.village, notes = excluded.notes,' +
+      '  focus = excluded.focus, updated_at = excluded.updated_at, version = excluded.version',
+    [v.id, v.patientId, v.chwId, v.visitDate, v.village, v.notes, v.focus ?? null, v.createdAt, v.updatedAt, v.version],
   );
 }
 
 export async function upsertVitals(db: Db, v: VitalSigns): Promise<void> {
   await db.run(
     'INSERT INTO vital_signs (id, visit_id, systolic_bp, diastolic_bp, temperature_c, weight_kg,' +
-      ' pulse_bpm, oxygen_saturation, respiratory_rate, blood_glucose_mmol, recorded_at)' +
-      ' VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)' +
+      ' pulse_bpm, oxygen_saturation, respiratory_rate, blood_glucose_mmol,' +
+      ' muac_colour, malaria_rdt, oedema, pregnancy_weeks, recorded_at)' +
+      ' VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)' +
       ' ON CONFLICT (visit_id) DO UPDATE SET' +
       '  systolic_bp = excluded.systolic_bp, diastolic_bp = excluded.diastolic_bp,' +
       '  temperature_c = excluded.temperature_c, weight_kg = excluded.weight_kg,' +
       '  pulse_bpm = excluded.pulse_bpm, oxygen_saturation = excluded.oxygen_saturation,' +
       '  respiratory_rate = excluded.respiratory_rate,' +
-      '  blood_glucose_mmol = excluded.blood_glucose_mmol, recorded_at = excluded.recorded_at',
+      '  blood_glucose_mmol = excluded.blood_glucose_mmol, muac_colour = excluded.muac_colour,' +
+      '  malaria_rdt = excluded.malaria_rdt, oedema = excluded.oedema,' +
+      '  pregnancy_weeks = excluded.pregnancy_weeks, recorded_at = excluded.recorded_at',
     [
       v.id, v.visitId, v.systolicBp, v.diastolicBp, v.temperatureC, v.weightKg,
-      v.pulseBpm, v.oxygenSaturation, v.respiratoryRate, v.bloodGlucoseMmol, v.recordedAt,
+      v.pulseBpm, v.oxygenSaturation, v.respiratoryRate, v.bloodGlucoseMmol,
+      v.muacColour ?? null, v.malariaRdt ?? null,
+      v.oedema === null || v.oedema === undefined ? null : fromBool(v.oedema),
+      v.pregnancyWeeks ?? null, v.recordedAt,
     ],
   );
 }

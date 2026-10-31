@@ -4,6 +4,7 @@ import type { RuleSet } from './types.ts';
 export * from './types.ts';
 export * from './engine.ts';
 export * from './symptoms.ts';
+export * from './focus.ts';
 
 /**
  * The rule set shipped with the application.

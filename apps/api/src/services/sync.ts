@@ -103,12 +103,16 @@ export async function processSyncBatch(
 }
 
 async function processOne(db: Db, user: AuthUser, item: SyncItemInput): Promise<SyncResult> {
-  // 1. Replay check, before any work is done.
+  // 1. Replay check, before any work is done. Only a record that was actually STORED
+  //    makes a replay a duplicate. A key that was refused before is processed again: if
+  //    the reason still holds it is refused again, and if it no longer holds the record
+  //    is stored. Answering "already received" to a refused record would let the device
+  //    mark it as sent although the server never kept it.
   const receipt = await db.get<{ result_status: string }>(
     'SELECT result_status FROM sync_receipts WHERE idempotency_key = ?',
     [item.idempotencyKey],
   );
-  if (receipt) {
+  if (receipt?.result_status === 'APPLIED') {
     return result(item, 'DUPLICATE', 'This record was already received.');
   }
 
@@ -137,11 +141,13 @@ async function processOne(db: Db, user: AuthUser, item: SyncItemInput): Promise<
 
   try {
     return await db.transaction(async (tx) => {
-      // 4. Authorisation and referential checks inside the transaction.
+      // 4. Authorisation and referential checks inside the transaction. A record whose
+      //    visit or patient has not arrived yet is turned away WITHOUT a receipt: that
+      //    is a matter of order, not of the record, and its retry must be able to land.
       const denial = await checkAuthorisation(tx, user, item, payload);
       if (denial) {
-        await writeReceipt(tx, user, item, 'REJECTED');
-        return result(item, 'REJECTED', denial);
+        if (!denial.awaitingParent) await writeReceipt(tx, user, item, 'REJECTED');
+        return result(item, 'REJECTED', denial.message);
       }
 
       // 5. Conflict detection for versioned entities.
@@ -174,7 +180,9 @@ async function writeReceipt(
   await db.run(
     'INSERT INTO sync_receipts (idempotency_key, user_id, entity_type, entity_id, operation, result_status, received_at)' +
       ' VALUES (?, ?, ?, ?, ?, ?, ?)' +
-      ' ON CONFLICT (idempotency_key) DO NOTHING',
+      // A key refused earlier and accepted now records the new outcome.
+      ' ON CONFLICT (idempotency_key) DO UPDATE SET result_status = excluded.result_status,' +
+      '  received_at = excluded.received_at',
     [
       item.idempotencyKey,
       user.id,
@@ -194,29 +202,37 @@ async function writeReceipt(
  * of the field (for example a nurse correcting a referral), which the permission check
  * on the route has already established.
  */
+interface Denial {
+  message: string;
+  /** The record is fine; something it depends on has not been received yet. */
+  awaitingParent?: boolean;
+}
+
 async function checkAuthorisation(
   db: Db,
   user: AuthUser,
   item: SyncItemInput,
   payload: Record<string, unknown>,
-): Promise<string | null> {
+): Promise<Denial | null> {
   const isCHW = user.role === 'CHW';
+  const deny = (message: string): Denial => ({ message });
+  const awaiting = (message: string): Denial => ({ message, awaitingParent: true });
 
   switch (item.entityType) {
     case 'patient': {
       if (isCHW && payload.createdBy !== user.id) {
-        return 'A CHW may only upload patients they registered.';
+        return deny('A CHW may only upload patients they registered.');
       }
       return null;
     }
 
     case 'visit': {
       if (isCHW && payload.chwId !== user.id) {
-        return 'A CHW may only upload their own visits.';
+        return deny('A CHW may only upload their own visits.');
       }
       const patient = await db.get('SELECT id FROM patients WHERE id = ?', [payload.patientId as string]);
       if (!patient) {
-        return 'The patient for this visit has not been received yet.';
+        return awaiting('The patient for this visit has not been received yet.');
       }
       return null;
     }
@@ -228,22 +244,22 @@ async function checkAuthorisation(
         'SELECT chw_id FROM visits WHERE id = ?',
         [payload.visitId as string],
       );
-      if (!visit) return 'The visit for this record has not been received yet.';
-      if (isCHW && visit.chw_id !== user.id) return 'That visit belongs to another CHW.';
+      if (!visit) return awaiting('The visit for this record has not been received yet.');
+      if (isCHW && visit.chw_id !== user.id) return deny('That visit belongs to another CHW.');
       return null;
     }
 
     case 'referral': {
       if (isCHW && payload.createdBy !== user.id) {
-        return 'A CHW may only upload referrals they created.';
+        return deny('A CHW may only upload referrals they created.');
       }
       const visit = await db.get('SELECT id FROM visits WHERE id = ?', [payload.visitId as string]);
-      if (!visit) return 'The visit for this referral has not been received yet.';
+      if (!visit) return awaiting('The visit for this referral has not been received yet.');
       return null;
     }
 
     default:
-      return `Unknown entity type ${item.entityType}.`;
+      return deny(`Unknown entity type ${item.entityType}.`);
   }
 }
 

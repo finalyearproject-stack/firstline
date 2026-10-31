@@ -11,7 +11,7 @@
  * silently suppress — a glucose rule. `absent` is the one operator that treats a
  * missing fact as a match, because that is precisely what it asks about.
  */
-import type { RiskLevel, Severity } from '@rhm/shared';
+import type { RiskLevel, Severity, Urgency } from '@rhm/shared';
 import type {
   Condition,
   FiredRule,
@@ -24,6 +24,7 @@ import type {
 
 const RISK_ORDER: Record<RiskLevel, number> = { GREEN: 0, AMBER: 1, RED: 2 };
 const SEVERITY_ORDER: Record<Severity, number> = { MILD: 0, MODERATE: 1, SEVERE: 2 };
+const URGENCY_ORDER: Record<Urgency, number> = { ROUTINE: 0, WITHIN_24H: 1, IMMEDIATE: 2 };
 
 function isLeaf(node: Condition): node is Leaf {
   return typeof (node as Leaf).fact === 'string';
@@ -151,9 +152,17 @@ export function runTriage(facts: TriageFacts, ruleSet: RuleSet): TriageOutcome {
     ? fired[0].recommendation
     : ruleSet.defaultResult.recommendation;
 
+  // The most urgent referral asked for by any fired rule, so a RED danger sign is never
+  // softened to "within 24 hours" by a concurrent AMBER one.
+  const referralUrgency = fired
+    .map((r) => r.referralUrgency)
+    .filter((u): u is Urgency => u !== null)
+    .sort((a, b) => URGENCY_ORDER[b] - URGENCY_ORDER[a])[0] ?? null;
+
   return {
     riskLevel,
     referralRequired: fired.some((r) => r.referralRequired),
+    referralUrgency,
     recommendation,
     firedRules: fired,
     triggeredRules: fired.map((r) => r.id),
@@ -173,6 +182,9 @@ function toFired(rule: Rule): FiredRule {
     recommendation: rule.recommendation,
     explanation: rule.explanation,
     referralRequired: rule.referralRequired,
+    referralUrgency: rule.referralRequired
+      ? rule.referralUrgency ?? (rule.riskLevel === 'RED' ? 'IMMEDIATE' : 'ROUTINE')
+      : null,
     priority: rule.priority,
   };
 }
@@ -234,6 +246,9 @@ export function validateRuleSet(ruleSet: RuleSet): string[] {
     if (typeof rule.priority !== 'number') errors.push(where + ': priority must be a number');
     if (!rule.label) errors.push(where + ': label is required');
     if (!rule.recommendation) errors.push(where + ': recommendation is required');
+    if (rule.referralUrgency !== undefined && !(rule.referralUrgency in URGENCY_ORDER)) {
+      errors.push(where + ': invalid referralUrgency');
+    }
     errors.push(...validateCondition(rule.condition, where));
   }
 

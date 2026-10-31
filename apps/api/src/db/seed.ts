@@ -17,6 +17,7 @@ import {
   type ConsentStatus,
   type Patient,
   type Referral,
+  type ScreeningFocus,
   type Sex,
   type Symptom,
   type TriageResult,
@@ -240,6 +241,22 @@ export async function seed(db: Db, log: (msg: string) => void = console.log): Pr
       const daysAgo = Math.max(0, registeredDaysAgo - v * between(5, 20));
       const visitId = uuid();
 
+      // Drawn before the visit so its screening focus can follow from them: a VHT who
+      // finds a feverish child screens for fever, a pregnant woman gets an antenatal check.
+      const band = random();
+      const isAdult = age >= 16;
+      const feverish = chance(0.18);
+      const pregnantVisit = sex === 'FEMALE' && age >= 16 && age <= 45 && chance(0.18);
+      const focus: ScreeningFocus = pregnantVisit
+        ? 'PREGNANCY'
+        : age < 5
+          ? (chance(0.7) ? 'CHILD' : feverish ? 'FEVER' : 'COUGH')
+          : feverish && chance(0.7)
+            ? 'FEVER'
+            : isAdult && band > 0.72 && chance(0.6)
+              ? 'BLOOD_PRESSURE'
+              : pick(['GENERAL', 'GENERAL', 'COUGH', 'BLOOD_PRESSURE'] as const);
+
       const visit: Visit = {
         id: visitId,
         patientId: patient.id,
@@ -247,6 +264,7 @@ export async function seed(db: Db, log: (msg: string) => void = console.log): Pr
         visitDate: iso(daysAgo, between(8, 17)),
         village,
         notes: chance(0.3) ? 'Routine household screening visit.' : null,
+        focus,
         createdAt: iso(daysAgo),
         updatedAt: iso(daysAgo),
         version: 1,
@@ -257,8 +275,6 @@ export async function seed(db: Db, log: (msg: string) => void = console.log): Pr
 
       // Vitals. A deliberate minority of readings are in the raised and severe bands so
       // the demo contains real RED and AMBER cases rather than only healthy screenings.
-      const band = random();
-      const isAdult = age >= 16;
       const systolic = !isAdult
         ? between(90, 110)
         : band > 0.9
@@ -274,7 +290,10 @@ export async function seed(db: Db, log: (msg: string) => void = console.log): Pr
             ? between(90, 99)
             : between(65, 85);
 
-      const feverish = chance(0.18);
+      // Kit measurements, taken when the focus calls for them (MUAC for under-fives,
+      // a malaria test for fever, weeks for a pregnancy), as a VHT would.
+      const muacTaken = focus === 'CHILD' && chance(0.85);
+      const rdtTaken = (focus === 'FEVER' || (focus === 'CHILD' && feverish)) && chance(0.85);
 
       const vitals: VitalSigns = {
         id: uuid(),
@@ -289,6 +308,10 @@ export async function seed(db: Db, log: (msg: string) => void = console.log): Pr
         bloodGlucoseMmol: chance(0.25)
           ? (chance(0.15) ? Number((11.5 + random() * 9).toFixed(1)) : Number((4.2 + random() * 2.5).toFixed(1)))
           : null,
+        muacColour: muacTaken ? (chance(0.05) ? 'RED' : chance(0.13) ? 'YELLOW' : 'GREEN') : null,
+        malariaRdt: rdtTaken ? (chance(feverish ? 0.5 : 0.15) ? 'POSITIVE' : 'NEGATIVE') : null,
+        oedema: focus === 'CHILD' ? chance(0.02) : null,
+        pregnancyWeeks: pregnantVisit ? between(8, 38) : null,
         recordedAt: visit.visitDate,
         syncStatus: 'SYNCED',
       };
@@ -297,7 +320,7 @@ export async function seed(db: Db, log: (msg: string) => void = console.log): Pr
       // Symptoms
       const symptoms: Symptom[] = [];
       const symptomPool = SYMPTOM_CATALOGUE.filter((s) => {
-        if (s.code === 'pregnant') return sex === 'FEMALE' && age >= 16 && age <= 45;
+        if (s.code === 'pregnant') return false; // recorded only on pregnancy visits, below
         if (['unable_to_feed', 'vomits_everything'].includes(s.code)) return age < 5;
         return true;
       });
@@ -317,6 +340,12 @@ export async function seed(db: Db, log: (msg: string) => void = console.log): Pr
           severity: pick(['MILD', 'MODERATE', 'SEVERE'] as const),
           durationDays: def.asksDuration ? between(1, 21) : null,
           syncStatus: 'SYNCED',
+        });
+      }
+      if (pregnantVisit) {
+        symptoms.push({
+          id: uuid(), visitId, symptomCode: 'pregnant', symptomName: 'Pregnant',
+          severity: 'MILD', durationDays: null, syncStatus: 'SYNCED',
         });
       }
       if (feverish && !chosen.has('fever_felt')) {
@@ -340,6 +369,10 @@ export async function seed(db: Db, log: (msg: string) => void = console.log): Pr
           oxygenSaturation: vitals.oxygenSaturation,
           respiratoryRate: vitals.respiratoryRate,
           bloodGlucoseMmol: vitals.bloodGlucoseMmol,
+          muacColour: vitals.muacColour,
+          malariaRdt: vitals.malariaRdt,
+          oedema: vitals.oedema,
+          pregnancyWeeks: vitals.pregnancyWeeks,
           symptoms: symptoms.map((s) => ({
             symptomCode: s.symptomCode,
             severity: s.severity,

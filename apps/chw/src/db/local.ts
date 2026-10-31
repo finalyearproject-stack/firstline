@@ -15,6 +15,7 @@ import type {
   Referral,
   RiskLevel,
   Severity,
+  ScreeningFocus,
   Sex,
   SyncStatus,
   SyncableEntity,
@@ -61,6 +62,8 @@ export interface StoredVisit {
   chwId: string;
   visitDate: string;
   village: string;
+  /** Not secret: what the screening was for. Absent on visits saved by older versions. */
+  focus?: ScreeningFocus | null;
   sec: Sealed;
   createdAt: string;
   updatedAt: string;
@@ -204,6 +207,7 @@ export const META_KEYS = {
   lastSyncAt: 'sync.lastAt',
   deviceId: 'device.id',
   awarenessSeeded: 'awareness.seeded',
+  recentFacilities: 'referral.recentFacilities',
 } as const;
 
 export async function getMeta<T>(key: string): Promise<T | null> {

@@ -5,7 +5,7 @@
  * data. It performs no I/O, makes no network call and consults no model, so it behaves
  * identically on a phone in airplane mode and on the server (spec s8).
  */
-import type { RiskLevel, Severity, Sex } from '@rhm/shared';
+import type { MuacColour, RdtResult, RiskLevel, Severity, Sex, Urgency } from '@rhm/shared';
 
 /** Comparison operators available to a rule condition. */
 export type Operator =
@@ -58,6 +58,12 @@ export interface Rule {
    */
   priority: number;
   referralRequired: boolean;
+  /**
+   * How soon a referral should happen. Optional: a RED rule means IMMEDIATE and any
+   * other referring rule ROUTINE unless it says otherwise (e.g. WHO's "go to the
+   * health centre as soon as possible" signs in pregnancy are WITHIN_24H).
+   */
+  referralUrgency?: Urgency;
   condition: Condition;
   /** Plain-language indicator shown in the "Triggered indicators" list. */
   label: string;
@@ -97,6 +103,10 @@ export interface TriageFacts {
   oxygenSaturation?: number | null;
   respiratoryRate?: number | null;
   bloodGlucoseMmol?: number | null;
+  muacColour?: MuacColour | null;
+  malariaRdt?: RdtResult | null;
+  oedema?: boolean | null;
+  pregnancyWeeks?: number | null;
   symptoms?: Array<{
     symptomCode: string;
     severity?: Severity | null;
@@ -113,12 +123,15 @@ export interface FiredRule {
   recommendation: string;
   explanation: string;
   referralRequired: boolean;
+  referralUrgency: Urgency | null;
   priority: number;
 }
 
 export interface TriageOutcome {
   riskLevel: RiskLevel;
   referralRequired: boolean;
+  /** The most urgent referral any fired rule asks for; null when none refers. */
+  referralUrgency: Urgency | null;
   recommendation: string;
   firedRules: FiredRule[];
   triggeredRules: string[];

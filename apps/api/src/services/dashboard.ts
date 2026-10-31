@@ -11,6 +11,7 @@
  * filters and `substr(ts, 1, 10)` day-grouping behave identically in SQLite and
  * PostgreSQL without dialect branching.
  */
+import type { ScreeningFocus } from '@rhm/shared';
 import type { Db, Param } from '../db/index.ts';
 
 export interface DateRange {
@@ -366,6 +367,41 @@ export async function getRiskByCategory(
   return [...counts.entries()]
     .map(([category, count]) => ({ category, count }))
     .sort((a, b) => b.count - a.count);
+}
+
+export interface FocusStat {
+  focus: ScreeningFocus;
+  visits: number;
+  red: number;
+  amber: number;
+  green: number;
+}
+
+/**
+ * Screenings by the focus the VHT chose, split by triage result. Visits recorded before
+ * focus existed have none and are counted as general checks.
+ */
+export async function getScreeningsByFocus(db: Db, filters: DateRange): Promise<FocusStat[]> {
+  const rows = await db.all<{ focus: string; risk: string | null; n: number }>(
+    "SELECT COALESCE(v.focus, 'GENERAL') AS focus, t.risk_level AS risk, COUNT(*) AS n" +
+      ' FROM visits v LEFT JOIN triage_results t ON t.visit_id = v.id' +
+      ' WHERE v.visit_date BETWEEN ? AND ?' +
+      " GROUP BY COALESCE(v.focus, 'GENERAL'), t.risk_level",
+    [filters.from, filters.to],
+  );
+
+  const byFocus = new Map<ScreeningFocus, FocusStat>();
+  for (const row of rows) {
+    const focus = row.focus as ScreeningFocus;
+    const stat = byFocus.get(focus) ?? { focus, visits: 0, red: 0, amber: 0, green: 0 };
+    const n = Number(row.n);
+    stat.visits += n;
+    if (row.risk === 'RED') stat.red += n;
+    else if (row.risk === 'AMBER') stat.amber += n;
+    else if (row.risk === 'GREEN') stat.green += n;
+    byFocus.set(focus, stat);
+  }
+  return [...byFocus.values()].sort((a, b) => b.visits - a.visits);
 }
 
 // ---------------------------------------------------------------------------

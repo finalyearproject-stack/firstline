@@ -22,6 +22,7 @@ import {
 import type {
   Alert,
   ChwActivity,
+  FocusStat,
   Overview,
   ReferralStats,
   TriagePoint,
@@ -55,6 +56,16 @@ import {
 } from '../components/icons.tsx';
 
 const axis = CHART.axis;
+
+/** The names VHTs see in the app, so the dashboard and the phone use the same words. */
+const FOCUS_LABEL: Record<FocusStat['focus'], string> = {
+  FEVER: 'Fever or malaria',
+  COUGH: 'Cough or TB',
+  BLOOD_PRESSURE: 'Blood pressure or sugar',
+  PREGNANCY: 'Pregnancy',
+  CHILD: 'Sick child under 5',
+  GENERAL: 'General check',
+};
 
 /** Spelled out rather than shown raw: "INFO" is jargon, "For information" is not. */
 const SEVERITY_LABEL: Record<string, string> = {
@@ -93,7 +104,11 @@ export function OverviewScreen() {
   const [days, setDays] = useState(30);
 
   const overview = useResource<Overview>(`/dashboard/overview?days=${days}`, [days]);
-  const triage = useResource<{ trend: TriagePoint[]; byCategory: Array<{ category: string; count: number }> }>(
+  const triage = useResource<{
+    trend: TriagePoint[];
+    byCategory: Array<{ category: string; count: number }>;
+    byFocus: FocusStat[];
+  }>(
     `/dashboard/triage?days=${days}`,
     [days],
   );
@@ -276,6 +291,7 @@ export function OverviewScreen() {
             </Card>
           </div>
 
+          <div className="grid grid--2">
           <Card title="Risk indicators by clinical category" hint="How often each group of rules fired">
             {triage.loading ? (
               <Loading rows={4} />
@@ -305,6 +321,50 @@ export function OverviewScreen() {
               hypertension, DM = diabetes, MAT = maternal, and so on).
             </p>
           </Card>
+
+          <Card
+            title="Screenings by focus"
+            hint="What VHTs screened for, and what the screenings found"
+          >
+            {triage.loading ? (
+              <Loading rows={4} />
+            ) : (triage.data?.byFocus?.length ?? 0) === 0 ? (
+              <Empty>No screenings in this period.</Empty>
+            ) : (
+              <>
+                <div className="chart-wrap chart-wrap--focus">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      layout="vertical"
+                      data={triage.data!.byFocus.map((f) => ({ ...f, name: FOCUS_LABEL[f.focus] ?? f.focus }))}
+                      margin={{ top: 4, right: 12, left: 4, bottom: 0 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" stroke={CHART.grid} horizontal={false} />
+                      <XAxis type="number" tick={axis} tickLine={false} axisLine={false} allowDecimals={false} />
+                      <YAxis type="category" dataKey="name" tick={axis} tickLine={false} axisLine={false} width={150} />
+                      <Tooltip {...TOOLTIP_BAR} />
+                      <Bar dataKey="red" name="RED" stackId="r" fill={RISK_COLOURS.RED} maxBarSize={26} />
+                      <Bar dataKey="amber" name="AMBER" stackId="r" fill={RISK_COLOURS.AMBER} maxBarSize={26} />
+                      <Bar dataKey="green" name="GREEN" stackId="r" fill={RISK_COLOURS.GREEN} maxBarSize={26} radius={[0, 2, 2, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+                <Legend
+                  items={[
+                    { label: 'RED: urgent referral', colour: RISK_COLOURS.RED },
+                    { label: 'AMBER: follow-up', colour: RISK_COLOURS.AMBER },
+                    { label: 'GREEN: no danger signs', colour: RISK_COLOURS.GREEN },
+                  ]}
+                />
+              </>
+            )}
+            <p className="small muted" style={{ marginTop: 12, marginBottom: 0 }}>
+              The focus only chooses which questions the app asks first; every screening is
+              checked against the whole rule set. Visits recorded before focus existed count
+              as general checks.
+            </p>
+          </Card>
+          </div>
         </>
       ) : null}
     </Page>

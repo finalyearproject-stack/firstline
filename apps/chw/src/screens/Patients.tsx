@@ -2,8 +2,9 @@
  * Patient list, registration and the patient record.
  */
 import { useCallback, useEffect, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
-import { CONSENT_STATES, SEXES, type ConsentStatus, type Sex } from '@rhm/shared';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { CONSENT_STATES, SEXES, composeReferralLetter, describeMeasurements, type ConsentStatus, type Sex } from '@rhm/shared';
+import { ReferralLetter, focusName } from '../components/screening-parts.tsx';
 import {
   Alert,
   ChoiceGroup,
@@ -137,6 +138,8 @@ const SEX_OPTIONS = SEXES.map((value) => ({
 export function NewPatientScreen() {
   const { key, user } = useUnlocked();
   const navigate = useNavigate();
+  // Registering from "New screening" carries on into the screening with its focus.
+  const thenFocus = useSearchParams()[0].get('focus');
 
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -177,7 +180,7 @@ export function NewPatientScreen() {
         village: village.trim(),
         consentStatus: consent,
       });
-      navigate(`/patients/${patient.id}`, { replace: true });
+      navigate(thenFocus ? `/screen/${patient.id}?focus=${encodeURIComponent(thenFocus)}` : `/patients/${patient.id}`, { replace: true });
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'Could not save the patient.');
       setBusy(false);
@@ -288,7 +291,7 @@ export function NewPatientScreen() {
 // ---------------------------------------------------------------------------
 
 export function PatientDetailScreen() {
-  const { key } = useUnlocked();
+  const { key, user } = useUnlocked();
   const { id } = useParams<{ id: string }>();
   const [patient, setPatient] = useState<PatientView | null>(null);
   const [history, setHistory] = useState<VisitBundleView[]>([]);
@@ -398,19 +401,16 @@ export function PatientDetailScreen() {
                   >
                     <RiskIcon level={entry.triage?.riskLevel ?? 'GREEN'} size={17} />
                   </span>
-                  <strong>{formatDate(entry.visit.visitDate)}</strong>
+                  <div>
+                    <strong>{formatDate(entry.visit.visitDate)}</strong>
+                    {entry.visit.focus && <div className="muted small">{focusName(entry.visit.focus)}</div>}
+                  </div>
                 </div>
                 {entry.triage && <RiskBadge level={entry.triage.riskLevel} />}
               </div>
 
-              {entry.vitals && (
-                <div className="muted small">
-                  {entry.vitals.systolicBp !== null && entry.vitals.diastolicBp !== null && (
-                    <span>BP {entry.vitals.systolicBp}/{entry.vitals.diastolicBp} mmHg · </span>
-                  )}
-                  {entry.vitals.temperatureC !== null && <span>{entry.vitals.temperatureC} °C · </span>}
-                  {entry.vitals.pulseBpm !== null && <span>Pulse {entry.vitals.pulseBpm}</span>}
-                </div>
+              {entry.vitals && describeMeasurements(entry.vitals).length > 0 && (
+                <div className="muted small">{describeMeasurements(entry.vitals).join(' · ')}</div>
               )}
 
               {entry.symptoms.length > 0 && (
@@ -430,6 +430,33 @@ export function PatientDetailScreen() {
                   <span className="badge badge--PENDING">
                     Referred to {entry.referral.destination}
                   </span>
+                  <details className="mt-16">
+                    <summary className="small linkish">Referral letter</summary>
+                    <div className="mt-16">
+                      <ReferralLetter
+                        text={composeReferralLetter({
+                          referralCode: entry.referral.id.slice(0, 8).toUpperCase(),
+                          writtenAt: entry.referral.createdAt,
+                          facility: entry.referral.destination,
+                          urgency: entry.referral.urgency,
+                          patient: {
+                            name: `${patient.firstName} ${patient.lastName}`,
+                            age: patient.age,
+                            sex: patient.sex,
+                            village: patient.village,
+                            patientCode: patient.localId,
+                          },
+                          vht: { name: user.name, identifier: user.chwIdentifier },
+                          measurements: entry.vitals ?? {},
+                          symptoms: entry.symptoms.filter((s) => s.symptomCode !== 'pregnant').map((s) => s.symptomName),
+                          reasons: entry.triage?.triggeredLabels ?? [entry.referral.reason],
+                          riskLevel: entry.triage?.riskLevel ?? 'not recorded',
+                          rulesetVersion: entry.triage?.rulesetVersion ?? 'unknown',
+                          notes: entry.referral.notes,
+                        })}
+                      />
+                    </div>
+                  </details>
                 </div>
               )}
 

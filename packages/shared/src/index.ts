@@ -4,3 +4,5 @@ export * from './ids.ts';
 export * from './rbac.ts';
 export * from './sms.ts';
 export * from './awareness-seed.ts';
+export * from './letter.ts';
+export * from './facilities.ts';

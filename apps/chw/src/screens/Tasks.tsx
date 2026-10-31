@@ -6,7 +6,7 @@ import { Link } from 'react-router-dom';
 import { applyTheme, getTheme, type ThemeChoice } from '../theme.ts';
 import { Alert, ChoiceGroup, Empty, Screen, formatDate, initials } from '../components/shell.tsx';
 import { IconFollowUp, IconSync } from '../components/icons.tsx';
-import { useUnlocked } from '../state/session.tsx';
+import { useSession, useUnlocked } from '../state/session.tsx';
 import { useSync } from '../state/sync.tsx';
 import {
   listFollowUps,
@@ -154,6 +154,8 @@ export function SyncScreen() {
         </p>
       </div>
 
+      {progress.signInNeeded && <RenewSignIn onDone={() => void syncNow()} />}
+
       {progress.pending > 0 && (
         <Alert kind="info">
           Records waiting here are <strong>safe</strong>. They are stored on this phone and
@@ -243,5 +245,55 @@ export function SyncScreen() {
         </div>
       )}
     </Screen>
+  );
+}
+
+/**
+ * Shown when the server refused the stored sign-in. The username is fixed to this phone's
+ * VHT; only the password is asked for, and the PIN and records are untouched.
+ */
+function RenewSignIn({ onDone }: { onDone(): void }) {
+  const { user } = useUnlocked();
+  const { renewSignIn } = useSession();
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const submit = async () => {
+    setError(null);
+    setBusy(true);
+    try {
+      await renewSignIn(password);
+      setPassword('');
+      onDone();
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'Could not sign in.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="card">
+      <div className="card__label">Sign in again</div>
+      <p className="small" style={{ marginTop: 0 }}>
+        Your sign-in to the server has expired, so records cannot be sent. Everything is still
+        safe on this phone. Enter the password for <strong>{user.username}</strong> to continue.
+      </p>
+      <input
+        className="input mb-16"
+        type="password"
+        autoComplete="current-password"
+        aria-label="Password"
+        placeholder="Password"
+        value={password}
+        onChange={(event) => setPassword(event.target.value)}
+        onKeyDown={(event) => { if (event.key === 'Enter' && password) void submit(); }}
+      />
+      {error && <Alert kind="error">{error}</Alert>}
+      <button type="button" className="btn btn--primary" disabled={!password || busy} onClick={() => void submit()}>
+        {busy ? 'Signing in…' : 'Sign in and send'}
+      </button>
+    </div>
   );
 }

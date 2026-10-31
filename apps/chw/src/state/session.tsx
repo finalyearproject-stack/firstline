@@ -70,6 +70,8 @@ interface SessionContextValue {
   signIn(username: string, password: string, pin: string): Promise<void>;
   unlock(pin: string): Promise<boolean>;
   lock(): void;
+  /** Gets a fresh server sign-in for the same VHT, keeping the PIN and every record. */
+  renewSignIn(password: string): Promise<void>;
   signOutCompletely(): Promise<void>;
 }
 
@@ -179,6 +181,33 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     return true;
   }, [failedAttempts]);
 
+  /**
+   * Renews an expired server sign-in while unlocked.
+   *
+   * Only the token changes: it is sealed under the same PIN-derived key, so the PIN, the
+   * encrypted records and the outbox are untouched. The account must be the one this
+   * phone was set up for; a different VHT signing in here would mix two people's work.
+   */
+  const renewSignIn = useCallback(async (password: string) => {
+    if (!key || !user) throw new Error('Unlock the app first.');
+
+    let response;
+    try {
+      response = await apiLogin(user.username, password);
+    } catch (error) {
+      if (error instanceof ApiError) throw new Error(error.message);
+      throw new Error('Could not reach the server. Try again when you have a connection.');
+    }
+    if (response.user.id !== user.id) {
+      throw new Error('That is a different account. This phone belongs to ' + user.name + '.');
+    }
+
+    const session: StoredSession = { token: response.token, expiresAt: response.expiresAt, user: response.user };
+    await setMeta(META_KEYS.session, await sealJson(key, session));
+    setUser(response.user);
+    setToken(response.token);
+  }, [key, user]);
+
   /** Drops the key. Data stays on the device, encrypted. */
   const lock = useCallback(() => {
     setKey(null);
@@ -208,8 +237,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo<SessionContextValue>(
-    () => ({ lockState, user, token, key, failedAttempts, signIn, unlock, lock, signOutCompletely }),
-    [lockState, user, token, key, failedAttempts, signIn, unlock, lock, signOutCompletely],
+    () => ({ lockState, user, token, key, failedAttempts, signIn, unlock, lock, renewSignIn, signOutCompletely }),
+    [lockState, user, token, key, failedAttempts, signIn, unlock, lock, renewSignIn, signOutCompletely],
   );
 
   if (!ready) {

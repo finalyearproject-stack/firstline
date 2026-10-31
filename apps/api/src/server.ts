@@ -8,6 +8,7 @@ import { createApp } from './app.ts';
 import { getDb, closeDb } from './db/index.ts';
 import { migrate } from './db/migrate.ts';
 import { seed } from './db/seed.ts';
+import { installShippedRuleSet } from './routes/clinical.ts';
 
 async function main(): Promise<void> {
   if (config.db.dialect === 'sqlite' && config.db.sqlitePath !== ':memory:') {
@@ -28,6 +29,9 @@ async function main(): Promise<void> {
       await seed(db, (msg) => console.log(`[db]${msg}`));
     }
   }
+
+  const installed = await installShippedRuleSet(db);
+  if (installed) console.log(`[triage] unapproved deployment moved to shipped template ${installed}`);
 
   const app = createApp(db);
   const server = app.listen(config.port, config.host, () => {

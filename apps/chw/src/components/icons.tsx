@@ -250,6 +250,29 @@ export const IconMapPin = (p: IconProps) => (
   </Svg>
 );
 
+export const IconEye = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z" />
+    <circle cx="12" cy="12" r="2.8" />
+  </Svg>
+);
+
+/** The MUAC tape: a band with graduations. */
+export const IconTape = (p: IconProps) => (
+  <Svg {...p}>
+    <rect x="3" y="8" width="18" height="8" rx="2" />
+    <path d="M7 8v3M11 8v4M15 8v3M19 8v4" />
+  </Svg>
+);
+
+export const IconPrinter = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M7 9V3.5h10V9" />
+    <rect x="3.5" y="9" width="17" height="8" rx="2" />
+    <path d="M7 14h10v6.5H7z" />
+  </Svg>
+);
+
 // ---------------------------------------------------------------------------
 
 /**
@@ -266,6 +289,7 @@ const SYMPTOM_ICONS: Record<string, (p: IconProps) => JSX.Element> = {
   dizziness: IconQuestion,
   weight_loss: IconTrendDown,
   fatigue: IconMoon,
+  night_sweats: IconMoon,
 
   cough: IconLungs,
   difficulty_breathing: IconLungs,
@@ -284,6 +308,10 @@ const SYMPTOM_ICONS: Record<string, (p: IconProps) => JSX.Element> = {
   pregnant: IconBaby,
   vaginal_bleeding: IconDroplet,
   reduced_fetal_movement: IconBaby,
+  blurred_vision: IconEye,
+  swollen_face_hands: IconDroplet,
+  too_weak_to_get_up: IconMoon,
+  feels_ill: IconThermometer,
 };
 
 export function SymptomIcon({ code, size = 20 }: { code: string; size?: number }) {
