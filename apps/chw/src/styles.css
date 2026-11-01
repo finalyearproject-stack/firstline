@@ -1571,15 +1571,17 @@ h2 { font-size: 18px; font-weight: 600; }
   border-radius: var(--radius-xl);
   padding: 22px 20px 20px;
   background-color: var(--brand-700);
+  /* From brand-700, not the lighter brand-600, with a faint highlight: the small white text
+     on it must keep 4.5:1 even at the banner's lightest point (measured 4.74:1). */
   background-image:
-    radial-gradient(120% 90% at 100% 0%, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0) 55%),
-    linear-gradient(150deg, var(--brand-600) 0%, var(--brand-800) 100%);
+    radial-gradient(120% 90% at 100% 0%, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0) 55%),
+    linear-gradient(150deg, var(--brand-700) 0%, var(--brand-800) 100%);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 14px 30px -14px rgba(79, 79, 208, 0.65);
 }
 .hero::after { display: none; }
-.hero__label { font-size: 12px; font-weight: 500; letter-spacing: 0; text-transform: none; color: rgba(255, 255, 255, 0.8); }
+.hero__label { font-size: 12px; font-weight: 500; letter-spacing: 0; text-transform: none; color: rgba(255, 255, 255, 0.92); }
 .hero__title { font-family: var(--font); font-size: 24px; font-weight: 650; letter-spacing: -0.035em; }
-.hero__sub { font-size: 14.5px; color: rgba(255, 255, 255, 0.85); }
+.hero__sub { font-size: 14.5px; color: rgba(255, 255, 255, 0.92); }
 .hero__cta {
   margin-top: 18px;
   padding: 10px 16px;
@@ -2095,7 +2097,7 @@ a.list__item, :not(li) > .list__item {
 .anc__track { display: flex; justify-content: space-between; gap: 4px; margin: 6px 0 10px; padding: 0; list-style: none; }
 .anc__dot { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; border: 1.5px solid var(--ink-200); font-size: 11.5px; font-weight: 700; color: var(--ink-600); font-variant-numeric: tabular-nums; }
 .anc__dot--past { background: var(--ink-200); border-color: var(--ink-200); color: var(--ink-900); }
-.anc__dot--next { border: 2.5px solid var(--brand-600); color: var(--brand-700); background: var(--surface); }
+.anc__dot--next { border: 2.5px solid var(--brand-600); color: var(--brand-ink); background: var(--surface); }
 
 /* ============================================================ home shortcuts and screening setup */
 
