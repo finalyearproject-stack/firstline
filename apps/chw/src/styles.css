@@ -1,12 +1,12 @@
 :root {
   /*
-   * Brand: deep teal.
+   * Base tokens. The brand colour actually in use is IRIS, set by the theme block further
+   * down ("One accent (iris)"), which overrides the teal values here.
    *
-   * Chosen over the previous forest green for two reasons, one of them clinical:
-   *   - Green is a RISK LEVEL in this product. A green primary button competes with
-   *     "GREEN — no danger signs". Teal frees green to carry exactly one meaning.
-   *   - Red/green is the common colour-vision deficiency pair. Keeping the interface
-   *     chrome out of that pair means the risk colours are doing the work alone.
+   * Why not green, then teal: green is a RISK LEVEL in this product, so a green primary
+   * button competed with "GREEN — no danger signs"; teal still sat beside green, and both
+   * merge with it for red/green colour-blind readers. Iris is clear of the whole
+   * red/amber/green scale, so colour on a control can never read as a clinical verdict.
    */
   --brand-950: #06343a;
   --brand-900: #0a4a52;

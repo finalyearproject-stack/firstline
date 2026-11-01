@@ -10,8 +10,9 @@
  */
 
 :root {
-  /* Deep teal, shared with the CHW application. Green is reserved for the GREEN risk
-     level so a brand-coloured control can never be mistaken for a clinical verdict. */
+  /* Base tokens. The brand colour in use is IRIS, shared with the VHT app and set by the
+     theme block further down, which overrides these teal values. Green is reserved for
+     the GREEN risk level, so no brand-coloured control can be mistaken for a verdict. */
   --brand-950: #06343a;
   --brand-900: #0a4a52;
   --brand-800: #0d5c63;
