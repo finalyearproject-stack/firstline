@@ -42,14 +42,13 @@ export default defineConfig({
         name: 'FirstLine — VHT Screening',
         short_name: 'FirstLine',
         description: 'Health screening and referral for Village Health Teams, with offline support',
-        // The installed app's status and navigation bars take the page colour, not the brand:
-        // solid iris bands above and below a near-white page read as a template frame.
-        // index.html refines this per theme once the page has loaded.
-        theme_color: '#fafafa',
-        // Also the canvas colour. Installed on Android, this can colour the system navigation
-        // bar as well as the launch screen, and an iris band under a near-white app looked
-        // cheap. The cost: a dark-mode user sees a pale launch screen for a moment.
-        background_color: '#fafafa',
+        // Installed on Android, the app keeps ONE colour for its system navigation bar and
+        // launch screen; it cannot follow light and dark. Iris read as a cheap frame, and the
+        // light canvas left a white band under the dark theme, so both are the dark canvas: a
+        // dark bar sits naturally under either theme. The status bar is not stuck with this:
+        // index.html sets it per theme as soon as the page loads.
+        theme_color: '#09090b',
+        background_color: '#09090b',
         display: 'standalone',
         orientation: 'portrait',
         start_url: '/',
