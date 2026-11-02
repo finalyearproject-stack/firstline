@@ -2067,29 +2067,45 @@ a.list__item, :not(li) > .list__item {
 .muac--YELLOW .muac__swatch { background: #f2c230; }
 .muac--GREEN .muac__swatch { background: #2a9d4b; }
 
-/* Referral letter: monospaced so it reads like a form and copies cleanly. */
-.letter {
-  margin: 0 0 12px;
-  padding: 14px;
-  overflow-x: auto;
-  border-radius: 10px;
-  background: var(--ink-50);
-  font-family: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
-  font-size: 12.5px;
-  line-height: 1.5;
-  white-space: pre-wrap;
-  word-break: break-word;
+/* Referral letter, laid out as a document for the receiving health worker. */
+.ldoc {
+  margin-bottom: 14px;
+  padding: 18px 18px 16px;
+  border: 1px solid var(--hairline);
+  border-radius: 12px;
+  background: var(--surface);
   color: var(--ink-900);
+  font-size: 14.5px;
+  line-height: 1.45;
 }
-.linkish { cursor: pointer; color: var(--brand-700); font-weight: 650; }
+.ldoc__head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--hairline); }
+.ldoc__kicker { font-size: 11.5px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-500); }
+.ldoc__title { font-size: 19px; font-weight: 700; letter-spacing: -0.02em; margin-top: 2px; }
+.ldoc__code { display: grid; justify-items: end; font-size: 11.5px; color: var(--ink-500); }
+.ldoc__code strong { font-family: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace; font-size: 15px; letter-spacing: 0.04em; color: var(--ink-900); }
+.ldoc__urgency { margin: 12px 0 4px; padding: 7px 10px; border-radius: 8px; font-weight: 700; font-size: 13.5px; }
+.ldoc__urgency--IMMEDIATE  { background: var(--risk-red-soft);   color: var(--risk-red-ink); }
+.ldoc__urgency--WITHIN_24H { background: var(--risk-amber-soft); color: var(--risk-amber-ink); }
+.ldoc__urgency--ROUTINE    { background: var(--surface-2);       color: var(--ink-700); }
+.ldoc__rows { display: grid; grid-template-columns: 72px 1fr; gap: 6px 10px; margin: 12px 0; }
+.ldoc__rows dt { font-size: 12.5px; color: var(--ink-500); padding-top: 1px; }
+.ldoc__rows dd { margin: 0; font-weight: 600; }
+.ldoc__block { padding-top: 10px; margin-top: 10px; border-top: 1px solid var(--hairline-soft, var(--hairline)); }
+.ldoc__label { font-size: 12px; font-weight: 650; letter-spacing: 0.03em; text-transform: uppercase; color: var(--ink-500); margin-bottom: 4px; }
+.ldoc__list { margin: 0; padding-left: 18px; }
+.ldoc__list li { margin: 2px 0; }
+.ldoc__note { margin: 0; }
+.ldoc__result { margin: 12px 0 0; font-size: 12.5px; color: var(--ink-600); }
+.ldoc__sign { display: grid; gap: 14px; margin-top: 18px; font-size: 12.5px; color: var(--ink-600); }
+.ldoc__line { display: block; height: 22px; border-bottom: 1px solid var(--ink-400); margin-bottom: 4px; }
+.linkish { cursor: pointer; color: var(--brand-ink); font-weight: 650; }
 
-/* Printing a letter prints only the letter. */
+/* Printing a letter prints only the letter, in black on white. */
 @media print {
   body * { visibility: hidden; }
-  .letter-card, .letter-card .letter { visibility: visible; }
-  .letter-card { position: absolute; inset: 0 auto auto 0; width: 100%; border: 0; box-shadow: none; }
-  .letter-card > :not(.letter) { display: none; }
-  .letter { background: none; font-size: 12pt; color: #000; }
+  .letter-card .ldoc, .letter-card .ldoc * { visibility: visible; }
+  .letter-card .ldoc { position: absolute; inset: 0 auto auto 0; width: 100%; border: 0; background: #fff; color: #000; font-size: 11pt; }
+  .ldoc__urgency { border: 1px solid #000; background: none !important; color: #000 !important; }
 }
 
 /* WHO antenatal contacts: eight dots by week, past ones filled, the next one ringed. */
@@ -2183,3 +2199,63 @@ a.list__item, :not(li) > .list__item {
 }
 .facility__level--emergency { background: var(--tint-rose); color: var(--tint-rose-ink); }
 .facility__warn { margin-top: 10px; color: var(--risk-amber-ink); font-weight: 600; }
+
+/* ============================================================ less generic, more meaning */
+
+/* One neutral tile for every focus. Red, amber and green belong to the triage result. */
+.chip-icon--neutral { background: var(--surface-2); color: var(--ink-700); box-shadow: inset 0 0 0 1px var(--hairline); }
+
+/* A patient's last result, in place of initials. Same footprint as the old avatar. */
+.pmark {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  flex-shrink: 0;
+  margin-top: 1px;
+  border-radius: 50%;
+}
+.pmark--RED   { background: var(--risk-red-soft);   color: var(--risk-red-line);   box-shadow: inset 0 0 0 1.5px var(--risk-red-line); }
+.pmark--AMBER { background: var(--risk-amber-soft); color: var(--risk-amber-line); box-shadow: inset 0 0 0 1.5px var(--risk-amber-line); }
+.pmark--GREEN { background: var(--risk-green-soft); color: var(--risk-green-line); box-shadow: inset 0 0 0 1.5px var(--risk-green-line); }
+.pmark--NONE  { background: var(--surface-2); box-shadow: inset 0 0 0 1.5px var(--hairline); }
+.pmark__dash  { width: 14px; height: 2px; border-radius: 1px; background: var(--ink-400); }
+
+/* Today: three numbers in one bordered row, the follow-ups cell a link. */
+.today {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-bottom: 22px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius);
+  background: var(--surface);
+  overflow: hidden;
+}
+.today__cell {
+  display: grid;
+  gap: 2px;
+  padding: 14px 14px 12px;
+  color: var(--ink-900);
+  text-decoration: none;
+}
+.today__cell + .today__cell { border-left: 1px solid var(--hairline); }
+.today__value { font-size: 26px; font-weight: 650; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.today__label { display: inline-flex; align-items: center; gap: 2px; font-size: 12.5px; color: var(--ink-600); }
+.today__cell--link:active { background: var(--surface-2); }
+.today__cell--due .today__value { color: var(--brand-ink); }
+.today__cell--due .today__label { color: var(--brand-ink); font-weight: 600; }
+
+/* A quiet secondary route, so the shortcuts stay the obvious way in. */
+.quiet-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  border-radius: 12px;
+  color: var(--brand-ink);
+  font-weight: 600;
+  font-size: 15px;
+  text-decoration: none;
+}
+.quiet-link:active { background: var(--surface-2); }

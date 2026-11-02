@@ -3,13 +3,14 @@
  */
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { CONSENT_STATES, SEXES, composeReferralLetter, describeMeasurements, type ConsentStatus, type Sex } from '@rhm/shared';
+import { CONSENT_STATES, SEXES, describeMeasurements, type ConsentStatus, type RiskLevel, type Sex } from '@rhm/shared';
 import { ReferralLetter, focusName } from '../components/screening-parts.tsx';
 import {
   Alert,
   ChoiceGroup,
   Empty,
   Field,
+  PatientMark,
   RiskBadge,
   Screen,
   SectionHead,
@@ -34,6 +35,7 @@ import {
   createPatient,
   getPatient,
   getPatientHistory,
+  lastResults,
   searchPatients,
   type PatientView,
   type VisitBundleView,
@@ -43,7 +45,12 @@ export function PatientListScreen() {
   const { key } = useUnlocked();
   const [term, setTerm] = useState('');
   const [patients, setPatients] = useState<PatientView[]>([]);
+  const [results, setResults] = useState<Map<string, RiskLevel>>(new Map());
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    void lastResults().then(setResults);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -100,9 +107,7 @@ export function PatientListScreen() {
           {patients.map((patient) => (
             <li key={patient.id}>
               <Link to={`/patients/${patient.id}`} className="list__item">
-                <span className="list__avatar" aria-hidden="true">
-                  {initials(patient.firstName, patient.lastName)}
-                </span>
+                <PatientMark risk={results.get(patient.id)} />
                 <span className="list__body">
                   <span className="list__title">
                     {patient.firstName} {patient.lastName}
@@ -434,7 +439,7 @@ export function PatientDetailScreen() {
                     <summary className="small linkish">Referral letter</summary>
                     <div className="mt-16">
                       <ReferralLetter
-                        text={composeReferralLetter({
+                        input={{
                           referralCode: entry.referral.id.slice(0, 8).toUpperCase(),
                           writtenAt: entry.referral.createdAt,
                           facility: entry.referral.destination,
@@ -453,7 +458,7 @@ export function PatientDetailScreen() {
                           riskLevel: entry.triage?.riskLevel ?? 'not recorded',
                           rulesetVersion: entry.triage?.rulesetVersion ?? 'unknown',
                           notes: entry.referral.notes,
-                        })}
+                        }}
                       />
                     </div>
                   </details>

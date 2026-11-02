@@ -19,7 +19,6 @@ import {
   URGENCIES,
   uuid,
   auditSmsBody,
-  composeReferralLetter,
   composeReferralSms,
   rememberFacility,
   SCREENING_FOCUSES,
@@ -680,7 +679,7 @@ export function ScreeningScreen() {
 
               {destination.trim() && (
                 <ReferralLetter
-                  text={composeReferralLetter({
+                  input={{
                     referralCode: referralCodeFor(referralId),
                     writtenAt: new Date().toISOString(),
                     facility: destination.trim(),
@@ -699,7 +698,7 @@ export function ScreeningScreen() {
                     riskLevel: outcome.riskLevel,
                     rulesetVersion: outcome.rulesetVersion,
                     notes: referralNotes.trim() || null,
-                  })}
+                  }}
                 />
               )}
             </>

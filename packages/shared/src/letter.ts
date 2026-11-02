@@ -69,33 +69,72 @@ const URGENCY_TEXT: Record<Urgency, string> = {
 
 const SEX_TEXT: Record<Sex, string> = { FEMALE: 'female', MALE: 'male', OTHER: 'other' };
 
-export function composeReferralLetter(input: ReferralLetterInput): string {
-  const when = new Date(input.writtenAt);
-  const date = when.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
-  const time = when.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
-  const { patient, vht } = input;
-  const age = patient.age === 0 ? 'under 1 year' : `${patient.age} ${patient.age === 1 ? 'year' : 'years'}`;
+/** The letter's content, ready to lay out as a document or flatten to text. */
+export interface ReferralLetter {
+  referralCode: string;
+  date: string;
+  time: string;
+  facility: string;
+  urgency: Urgency;
+  urgencyText: string;
+  patient: { name: string; age: string; sex: string; village: string; patientCode: string };
+  reasons: string[];
+  findings: string[];
+  symptoms: string[];
+  notes: string | null;
+  result: string;
+  referredBy: string;
+}
 
+export function buildReferralLetter(input: ReferralLetterInput): ReferralLetter {
+  const when = new Date(input.writtenAt);
+  const { patient, vht } = input;
+  return {
+    referralCode: input.referralCode,
+    date: when.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }),
+    time: when.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
+    facility: input.facility,
+    urgency: input.urgency,
+    urgencyText: URGENCY_TEXT[input.urgency],
+    patient: {
+      name: patient.name,
+      age: patient.age === 0 ? 'under 1 year' : `${patient.age} ${patient.age === 1 ? 'year' : 'years'}`,
+      sex: SEX_TEXT[patient.sex],
+      village: patient.village,
+      patientCode: patient.patientCode,
+    },
+    reasons: input.reasons.length ? input.reasons : ['Further assessment requested by the VHT'],
+    findings: describeMeasurements(input.measurements),
+    symptoms: input.symptoms,
+    notes: input.notes,
+    result: `${input.riskLevel} (FirstLine rules ${input.rulesetVersion}; a screening aid, not a diagnosis)`,
+    referredBy: `${vht.name}${vht.identifier ? ` (${vht.identifier})` : ''}, Village Health Team`,
+  };
+}
+
+/** Plain text of the letter, for sharing by message or copying onto the paper form. */
+export function composeReferralLetter(input: ReferralLetterInput): string {
+  const l = buildReferralLetter(input);
   const section = (title: string, items: string[]) =>
     items.length ? [title, ...items.map((item) => `  - ${item}`), ''] : [];
 
   return [
     'VHT REFERRAL LETTER',
-    `Referral code: ${input.referralCode}`,
-    `Date: ${date}, ${time}`,
+    `Referral code: ${l.referralCode}`,
+    `Date: ${l.date}, ${l.time}`,
     '',
-    `To: ${input.facility}`,
-    `Urgency: ${URGENCY_TEXT[input.urgency]}`,
+    `To: ${l.facility}`,
+    `Urgency: ${l.urgencyText}`,
     '',
-    `Patient: ${patient.name}, ${age}, ${SEX_TEXT[patient.sex]}`,
-    `Village: ${patient.village}  (patient code ${patient.patientCode})`,
+    `Patient: ${l.patient.name}, ${l.patient.age}, ${l.patient.sex}`,
+    `Village: ${l.patient.village}  (patient code ${l.patient.patientCode})`,
     '',
-    ...section('Reasons for referral:', input.reasons.length ? input.reasons : ['Further assessment requested by the VHT']),
-    ...section('Findings:', describeMeasurements(input.measurements)),
-    ...section('Symptoms reported:', input.symptoms),
-    ...(input.notes ? ['Note from the VHT:', `  ${input.notes}`, ''] : []),
-    `Screening result: ${input.riskLevel} (FirstLine rules ${input.rulesetVersion}; a screening aid, not a diagnosis)`,
+    ...section('Reasons for referral:', l.reasons),
+    ...section('Findings:', l.findings),
+    ...section('Symptoms reported:', l.symptoms),
+    ...(l.notes ? ['Note from the VHT:', `  ${l.notes}`, ''] : []),
+    `Screening result: ${l.result}`,
     '',
-    `Referred by: ${vht.name}${vht.identifier ? ` (${vht.identifier})` : ''}, Village Health Team`,
+    `Referred by: ${l.referredBy}`,
   ].join('\n');
 }

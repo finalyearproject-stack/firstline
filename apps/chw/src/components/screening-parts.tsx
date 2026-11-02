@@ -5,7 +5,17 @@
  * referred patient.
  */
 import { useEffect, useRef, useState } from 'react';
-import { canTakeEmergencies, facilityLevel, rankFacilities, type MuacColour, type ScreeningFocus, type Sex } from '@rhm/shared';
+import {
+  buildReferralLetter,
+  canTakeEmergencies,
+  composeReferralLetter,
+  facilityLevel,
+  rankFacilities,
+  type MuacColour,
+  type ReferralLetterInput,
+  type ScreeningFocus,
+  type Sex,
+} from '@rhm/shared';
 import { FOCUS_CATALOGUE, WHO_ANC_CONTACT_WEEKS, fastBreathingFrom, focusFits, nextAncContact } from '@rhm/triage';
 import {
   IconActivity,
@@ -32,14 +42,11 @@ export const FOCUS_ICONS: Record<ScreeningFocus, (p: IconProps) => JSX.Element> 
   GENERAL: IconStethoscope,
 };
 
-export const FOCUS_TINT: Record<ScreeningFocus, string> = {
-  FEVER: 'rose',
-  COUGH: 'sky',
-  BLOOD_PRESSURE: 'violet',
-  PREGNANCY: 'amber',
-  CHILD: 'green',
-  GENERAL: 'teal',
-};
+/*
+ * Every focus shares one neutral tile; the icon tells them apart. Coloured tiles read as
+ * verdicts here: a rose "Fever" tile looks like RED and a green "Sick child" like GREEN,
+ * and in this app red, amber and green mean only the triage result.
+ */
 
 export function focusName(focus: ScreeningFocus | null | undefined): string {
   return FOCUS_CATALOGUE.find((f) => f.focus === focus)?.name ?? 'General check';
@@ -61,7 +68,7 @@ export function FocusPicker({
         return (
           <li key={option.focus}>
             <button type="button" className="focus-card" onClick={() => onPick(option.focus)}>
-              <span className={`chip-icon chip-icon--${FOCUS_TINT[option.focus]}`}><Icon size={22} /></span>
+              <span className="chip-icon chip-icon--neutral"><Icon size={22} /></span>
               <span className="focus-card__text">
                 <span className="focus-card__name">{option.name}</span>
                 <span className="focus-card__hint">{option.hint}</span>
@@ -198,8 +205,10 @@ export function MuacChoice({
  * The referral letter, shown as it will read, with the ways to get it to the facility.
  * Sharing is a deliberate act: the letter carries health information, unlike the SMS.
  */
-export function ReferralLetter({ text }: { text: string }) {
+export function ReferralLetter({ input }: { input: ReferralLetterInput }) {
   const [copied, setCopied] = useState(false);
+  const letter = buildReferralLetter(input);
+  const text = composeReferralLetter(input);
 
   const share = async () => {
     if (navigator.share) {
@@ -223,10 +232,57 @@ export function ReferralLetter({ text }: { text: string }) {
     }
   };
 
+  // Laid out as a document the receiving health worker can read at a glance; the plain
+  // text above is what Share sends.
+  const list = (title: string, items: string[]) =>
+    items.length > 0 && (
+      <div className="ldoc__block">
+        <div className="ldoc__label">{title}</div>
+        <ul className="ldoc__list">{items.map((item) => <li key={item}>{item}</li>)}</ul>
+      </div>
+    );
+
   return (
     <div className="card letter-card">
-      <div className="card__label row" style={{ gap: 8 }}><IconDoc size={16} /> Referral letter</div>
-      <pre className="letter">{text}</pre>
+      <article className="ldoc" aria-label="Referral letter">
+        <header className="ldoc__head">
+          <div>
+            <div className="ldoc__kicker">FirstLine · Village Health Team</div>
+            <div className="ldoc__title">Referral letter</div>
+          </div>
+          <div className="ldoc__code">
+            <span>Code</span>
+            <strong>{letter.referralCode}</strong>
+          </div>
+        </header>
+
+        <div className={`ldoc__urgency ldoc__urgency--${letter.urgency}`}>{letter.urgencyText}</div>
+
+        <dl className="ldoc__rows">
+          <dt>To</dt><dd>{letter.facility}</dd>
+          <dt>Patient</dt><dd>{letter.patient.name}, {letter.patient.age}, {letter.patient.sex}</dd>
+          <dt>Village</dt><dd>{letter.patient.village} · {letter.patient.patientCode}</dd>
+          <dt>Date</dt><dd>{letter.date}, {letter.time}</dd>
+        </dl>
+
+        {list('Reasons for referral', letter.reasons)}
+        {list('Findings', letter.findings)}
+        {list('Symptoms reported', letter.symptoms)}
+        {letter.notes && (
+          <div className="ldoc__block">
+            <div className="ldoc__label">Note from the VHT</div>
+            <p className="ldoc__note">{letter.notes}</p>
+          </div>
+        )}
+
+        <p className="ldoc__result">Screening result: {letter.result}</p>
+
+        <footer className="ldoc__sign">
+          <div><span className="ldoc__line" />Referred by {letter.referredBy}</div>
+          <div><span className="ldoc__line" />Received at facility (name, date)</div>
+        </footer>
+      </article>
+
       <p className="muted small">
         Show this at the facility, print it, or copy it onto the paper referral form. It
         contains health information: share it only with the patient or the facility.

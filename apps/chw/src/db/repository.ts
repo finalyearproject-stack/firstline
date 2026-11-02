@@ -628,83 +628,68 @@ export interface DeviceStats {
   green: number;
   pendingSync: number;
   openFollowUps: number;
-
-  /**
-   * Day-by-day counts for the trailing fortnight, oldest first, for the inline charts
-   * on the home screen. Quiet days are present as zeroes rather than omitted, so the
-   * axis stays real time.
-   */
-  daily: {
-    days: number;
-    patients: number[];
-    visits: number[];
-    red: number[];
-    amber: number[];
-  };
+  /** Referrals written today. */
+  referralsToday: number;
+  /** Open referrals whose follow-up date is today or past. */
+  followUpsDue: number;
 }
 
-const SPARK_DAYS = 14;
-
-/** Dense day-by-day counts from a list of ISO timestamps. */
-function bucketByDay(isoTimestamps: string[], days: number): number[] {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  const keys: string[] = [];
-  const buckets = new Map<string, number>();
-  for (let i = days - 1; i >= 0; i -= 1) {
-    const key = new Date(today.getTime() - i * 86_400_000).toISOString().slice(0, 10);
-    keys.push(key);
-    buckets.set(key, 0);
-  }
-
-  for (const iso of isoTimestamps) {
-    const key = iso.slice(0, 10);
-    if (buckets.has(key)) buckets.set(key, (buckets.get(key) ?? 0) + 1);
-  }
-
-  return keys.map((k) => buckets.get(k) ?? 0);
+/**
+ * The phone's own calendar day, YYYY-MM-DD. Not toISOString(): that is UTC, which in
+ * Uganda (UTC+3) would count everything between midnight and 3 a.m. against yesterday.
+ */
+function localDay(at: Date = new Date()): string {
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${at.getFullYear()}-${pad(at.getMonth() + 1)}-${pad(at.getDate())}`;
 }
 
 export async function deviceStats(): Promise<DeviceStats> {
   const database = db();
-  const today = new Date().toISOString().slice(0, 10);
+  const today = localDay();
+  const isToday = (iso: string) => localDay(new Date(iso)) === today;
 
-  // The full rows are needed anyway for the day-by-day series, so the counts are taken
-  // from them rather than issuing separate count() queries. At the 500-patient ceiling in
-  // spec s21 this is a few milliseconds.
-  const [allPatients, allVisits, triage, pendingSync, followUps] = await Promise.all([
+  // Counted from full rows rather than separate count() queries; at the 500-patient
+  // ceiling in spec s21 this is a few milliseconds.
+  const [allPatients, allVisits, triage, pendingSync, openReferrals, allReferrals] = await Promise.all([
     database.patients.toArray(),
     database.visits.toArray(),
     database.triage.toArray(),
     database.queue.where('status').anyOf('PENDING', 'FAILED', 'SYNCING').count(),
-    database.referrals.where('status').anyOf('PENDING', 'ACKNOWLEDGED').count(),
+    database.referrals.where('status').anyOf('PENDING', 'ACKNOWLEDGED').toArray(),
+    database.referrals.toArray(),
   ]);
+  const followUps = openReferrals.length;
 
   return {
     patients: allPatients.length,
     visits: allVisits.length,
-    visitsToday: allVisits.filter((v) => v.visitDate.startsWith(today)).length,
+    visitsToday: allVisits.filter((v) => isToday(v.visitDate)).length,
     red: triage.filter((t) => t.riskLevel === 'RED').length,
     amber: triage.filter((t) => t.riskLevel === 'AMBER').length,
     green: triage.filter((t) => t.riskLevel === 'GREEN').length,
     pendingSync,
     openFollowUps: followUps,
-
-    daily: {
-      days: SPARK_DAYS,
-      patients: bucketByDay(allPatients.map((p) => p.createdAt), SPARK_DAYS),
-      visits: bucketByDay(allVisits.map((v) => v.visitDate), SPARK_DAYS),
-      red: bucketByDay(
-        triage.filter((t) => t.riskLevel === 'RED').map((t) => t.createdAt),
-        SPARK_DAYS,
-      ),
-      amber: bucketByDay(
-        triage.filter((t) => t.riskLevel === 'AMBER').map((t) => t.createdAt),
-        SPARK_DAYS,
-      ),
-    },
+    referralsToday: allReferrals.filter((r) => isToday(r.createdAt)).length,
+    followUpsDue: openReferrals.filter((r) => r.followUpDate !== null && r.followUpDate <= today).length,
   };
+}
+
+/**
+ * Each patient's most recent triage result, for the marks in patient lists. Patients
+ * never screened are absent. Read from the clear-text indexes only; nothing is decrypted.
+ */
+export async function lastResults(): Promise<Map<string, TriageResult['riskLevel']>> {
+  const database = db();
+  const [visits, triage] = await Promise.all([database.visits.toArray(), database.triage.toArray()]);
+  const riskByVisit = new Map(triage.map((t) => [t.visitId, t.riskLevel]));
+  const latest = new Map<string, { at: string; risk: TriageResult['riskLevel'] }>();
+  for (const visit of visits) {
+    const risk = riskByVisit.get(visit.id);
+    if (!risk) continue;
+    const seen = latest.get(visit.patientId);
+    if (!seen || visit.visitDate > seen.at) latest.set(visit.patientId, { at: visit.visitDate, risk });
+  }
+  return new Map([...latest].map(([id, v]) => [id, v.risk]));
 }
 
 export interface RecentScreening {

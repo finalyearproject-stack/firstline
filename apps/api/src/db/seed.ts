@@ -238,7 +238,11 @@ export async function seed(db: Db, log: (msg: string) => void = console.log): Pr
     // least the most recent one, so the dashboard has something to show.
     const visits = between(1, 4);
     for (let v = 0; v < visits; v += 1) {
-      const daysAgo = Math.max(0, registeredDaysAgo - v * between(5, 20));
+      // Later visits follow the registration forward in time. One that would fall in the
+      // future is skipped, not moved to today: clamping piled them all onto the last day
+      // and drew a false spike at the end of every screening-volume chart.
+      const daysAgo = registeredDaysAgo - v * between(5, 20);
+      if (daysAgo < 0) break;
       const visitId = uuid();
 
       // Drawn before the visit so its screening focus can follow from them: a VHT who

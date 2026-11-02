@@ -8,12 +8,12 @@
  */
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { SCREENING_FOCUSES, type ScreeningFocus } from '@rhm/shared';
+import { SCREENING_FOCUSES, type RiskLevel, type ScreeningFocus } from '@rhm/shared';
 import { FOCUS_CATALOGUE, focusFits } from '@rhm/triage';
-import { Empty, Screen, initials } from '../components/shell.tsx';
+import { Empty, PatientMark, Screen } from '../components/shell.tsx';
 import { IconPatients, IconPlus, IconSearch } from '../components/icons.tsx';
 import { useUnlocked } from '../state/session.tsx';
-import { searchPatients, type PatientView } from '../db/repository.ts';
+import { lastResults, searchPatients, type PatientView } from '../db/repository.ts';
 
 const WHO_FITS: Partial<Record<ScreeningFocus, string>> = {
   PREGNANCY: 'Showing women aged 10 to 55.',
@@ -29,6 +29,11 @@ export function NewScreeningScreen() {
   const [term, setTerm] = useState('');
   const [patients, setPatients] = useState<PatientView[] | null>(null);
   const [chosen, setChosen] = useState<string | null>(null);
+  const [results, setResults] = useState<Map<string, RiskLevel>>(new Map());
+
+  useEffect(() => {
+    void lastResults().then(setResults);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -105,7 +110,7 @@ export function NewScreeningScreen() {
                   className="list__item list__item--pick"
                   onClick={() => setChosen(patient.id)}
                 >
-                  <span className="list__avatar" aria-hidden="true">{initials(patient.firstName, patient.lastName)}</span>
+                  <PatientMark risk={results.get(patient.id)} />
                   <span className="list__body">
                     <span className="list__title">{patient.firstName} {patient.lastName}</span>
                     <span className="list__meta">

@@ -19,6 +19,7 @@ import {
   IconLock,
   IconPatients,
   type IconProps,
+  RiskIcon,
 } from './icons.tsx';
 
 // ---------------------------------------------------------------------------
@@ -388,6 +389,20 @@ export function SectionHead({ title, action }: { title: string; action?: ReactNo
       <h2>{title}</h2>
       {action}
     </div>
+  );
+}
+
+/**
+ * A patient's last triage result, in place of initials in patient lists. Initials told a
+ * VHT nothing; this shows at a glance who was last found RED or AMBER, and who has never
+ * been screened. The icon differs by level, so it does not rely on colour alone.
+ */
+export function PatientMark({ risk }: { risk: RiskLevel | null | undefined }) {
+  const label = risk ? `Last result ${risk}` : 'Not screened yet';
+  return (
+    <span className={`pmark pmark--${risk ?? 'NONE'}`} role="img" aria-label={label} title={label}>
+      {risk ? <RiskIcon level={risk} size={19} /> : <span className="pmark__dash" />}
+    </span>
   );
 }
 

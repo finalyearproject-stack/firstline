@@ -57,6 +57,14 @@ import {
 
 const axis = CHART.axis;
 
+/** Referral status by how much it still needs: open ones strong, closed ones neutral. */
+const STATUS_FILL: Record<string, string> = {
+  PENDING: 'var(--c-brand)',
+  ACKNOWLEDGED: 'var(--brand-300)',
+  COMPLETED: 'var(--ink-300)',
+  CANCELLED: 'var(--ink-200)',
+};
+
 /** The names VHTs see in the app, so the dashboard and the phone use the same words. */
 const FOCUS_LABEL: Record<FocusStat['focus'], string> = {
   FEVER: 'Fever or malaria',
@@ -308,8 +316,10 @@ export function OverviewScreen() {
                       {...TOOLTIP_BAR}
                     />
                     <Bar dataKey="count" radius={[2, 2, 0, 0]} maxBarSize={56}>
-                      {triage.data!.byCategory.map((entry, index) => (
-                        <Cell key={entry.category} fill={SERIES_COLOURS[index % SERIES_COLOURS.length]} />
+                      {/* One colour: the labels name the categories. A rainbow here put red,
+                          amber and green bars on screen that did not mean RED, AMBER or GREEN. */}
+                      {triage.data!.byCategory.map((entry) => (
+                        <Cell key={entry.category} fill="var(--c-brand)" />
                       ))}
                     </Bar>
                   </BarChart>
@@ -478,8 +488,8 @@ export function AnalyticsScreen() {
                     outerRadius={96}
                     paddingAngle={2}
                   >
-                    {statusData.map((entry, index) => (
-                      <Cell key={entry.name} fill={SERIES_COLOURS[index % SERIES_COLOURS.length]} />
+                    {statusData.map((entry) => (
+                      <Cell key={entry.name} fill={STATUS_FILL[entry.name] ?? 'var(--ink-300)'} />
                     ))}
                   </Pie>
                   <Tooltip {...TOOLTIP} />

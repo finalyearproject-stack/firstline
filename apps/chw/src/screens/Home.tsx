@@ -1,29 +1,17 @@
 /**
- * Home: what the CHW needs at a glance, and the two things they do most.
+ * Home: what the VHT needs at a glance, and the way into a screening.
  *
- * Structured after the reference set's hierarchy — a quiet greeting, then a large
- * headline, then one dominant primary action — because a flat grid of equal-weight
- * cards makes the user read everything to find the one thing they came to do.
+ * A quiet greeting, then today's three actionable numbers, then one way in: what the
+ * screening is for. Earlier versions offered three routes to the same task (a banner, the
+ * shortcuts and a register button) and four counters of everything ever recorded; both
+ * made the screen read like a template rather than a tool.
  */
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FOCUS_CATALOGUE } from '@rhm/triage';
-import { RiskBadge, Screen, SyncBadge, initials } from '../components/shell.tsx';
-import { FOCUS_ICONS, FOCUS_TINT, focusName } from '../components/screening-parts.tsx';
-import {
-  IconActivity,
-  IconAlert,
-  IconArrowRight,
-  IconCheck,
-  IconChevronRight,
-  IconClock,
-  IconLock,
-  IconPatients,
-  IconPlus,
-  IconSync,
-} from '../components/icons.tsx';
-import { CountUp } from '../components/count-up.tsx';
-import { Sparkbars, hasSignal } from '../components/spark.tsx';
+import { PatientMark, Screen, SyncBadge } from '../components/shell.tsx';
+import { FOCUS_ICONS, focusName } from '../components/screening-parts.tsx';
+import { IconChevronRight, IconLock, IconPlus, IconSync } from '../components/icons.tsx';
 import { deviceStats, listRecentScreenings, type DeviceStats, type RecentScreening } from '../db/repository.ts';
 import { useSession, useUnlocked } from '../state/session.tsx';
 import { useSync } from '../state/sync.tsx';
@@ -69,7 +57,7 @@ export function HomeScreen() {
     void listRecentScreenings(key).then(setRecent);
   }, [key, progress.pending, progress.state]);
 
-  const todayCount = stats?.visitsToday ?? 0;
+  const due = stats?.followUpsDue ?? 0;
 
   return (
     <Screen
@@ -86,16 +74,12 @@ export function HomeScreen() {
         </button>
       }
     >
-      <div style={{ marginBottom: 20 }}>
+      <div style={{ marginBottom: 18 }}>
         <div className="greeting">{greetingFor()},</div>
         <h1 className="display">
           {firstNameOf(user?.name)}
           <br />
-          <em>
-            {todayCount === 0
-              ? 'ready to screen.'
-              : `${todayCount} screening${todayCount === 1 ? '' : 's'} today.`}
-          </em>
+          <em>{due > 0 ? `${due} follow-up${due === 1 ? '' : 's'} due.` : 'ready to screen.'}</em>
         </h1>
         <div className="muted small" style={{ marginTop: 8 }}>
           {todayLabel()}
@@ -104,19 +88,24 @@ export function HomeScreen() {
         </div>
       </div>
 
-      {/* The primary action, given the weight the reference promo cards get — except the
-          action here is clinical work, not an advertisement. */}
-      <Link to="/screen/new" className="hero">
-        <div className="hero__label">Start here</div>
-        <div className="hero__title">Screen a patient</div>
-        <div className="hero__sub">
-          Choose what you are screening for, then who. New patients can be added there.
+      {/* Today, in the three numbers a VHT can act on. Totals of everything ever recorded
+          on the phone were dropped: nobody does anything differently for knowing them. */}
+      <div className="today" aria-label="Today">
+        <div className="today__cell">
+          <span className="today__value">{stats?.visitsToday ?? '–'}</span>
+          <span className="today__label">Screened today</span>
         </div>
-        <span className="hero__cta">
-          Start a screening <IconArrowRight size={18} />
-        </span>
-      </Link>
+        <div className="today__cell">
+          <span className="today__value">{stats?.referralsToday ?? '–'}</span>
+          <span className="today__label">Referred today</span>
+        </div>
+        <Link to="/follow-ups" className={`today__cell today__cell--link${due > 0 ? ' today__cell--due' : ''}`}>
+          <span className="today__value">{stats ? due : '–'}</span>
+          <span className="today__label">Follow-ups due <IconChevronRight size={14} /></span>
+        </Link>
+      </div>
 
+      {/* The way into a screening: what it is for, then who. */}
       <div className="section-head">
         <h2>Screen for…</h2>
       </div>
@@ -126,16 +115,15 @@ export function HomeScreen() {
           return (
             <li key={option.focus}>
               <Link to={`/screen/new?focus=${option.focus}`} className="shortcut">
-                <span className={`chip-icon chip-icon--sm chip-icon--${FOCUS_TINT[option.focus]}`}><Icon size={18} /></span>
+                <span className="chip-icon chip-icon--sm chip-icon--neutral"><Icon size={18} /></span>
                 <span className="shortcut__name">{option.name}</span>
               </Link>
             </li>
           );
         })}
       </ul>
-
-      <Link to="/patients/new" className="btn btn--secondary mb-16">
-        <IconPlus size={19} /> Register a new patient
+      <Link to="/screen/new" className="quiet-link mb-16">
+        <IconPlus size={17} /> Find or register a patient
       </Link>
 
       {recent !== null && recent.length > 0 && (
@@ -148,18 +136,17 @@ export function HomeScreen() {
             {recent.map((item) => (
               <li key={item.visitId}>
                 <Link to={item.patient ? `/patients/${item.patient.id}` : '/patients'} className="list__item">
-                  <span className="list__avatar" aria-hidden="true">
-                    {item.patient ? initials(item.patient.firstName, item.patient.lastName) : '?'}
-                  </span>
+                  <PatientMark risk={item.riskLevel} />
                   <span className="list__body">
                     <span className="list__title">
                       {item.patient ? `${item.patient.firstName} ${item.patient.lastName}` : 'Patient'}
                     </span>
-                    <span className="list__meta">{focusName(item.focus)} · {timeLabel(item.visitDate)}</span>
-                    {(item.riskLevel || item.syncStatus !== 'SYNCED') && (
+                    <span className="list__meta">
+                      {item.riskLevel ?? 'No result'} · {focusName(item.focus)} · {timeLabel(item.visitDate)}
+                    </span>
+                    {item.syncStatus !== 'SYNCED' && (
                       <span className="list__tags">
-                        {item.riskLevel && <RiskBadge level={item.riskLevel} />}
-                        {item.syncStatus !== 'SYNCED' && <SyncBadge status={item.syncStatus} />}
+                        <SyncBadge status={item.syncStatus} />
                       </span>
                     )}
                   </span>
@@ -171,94 +158,12 @@ export function HomeScreen() {
         </>
       )}
 
-      <div className="section-head">
-        <h2>On this phone</h2>
-        <Link to="/sync" className="section-head__action">
-          Sync details ›
-        </Link>
-      </div>
-
-      <div className="stat-grid">
-        <StatTile
-          tone="teal"
-          icon={IconPatients}
-          loading={stats === null}
-          value={stats?.patients ?? 0}
-          label="Patients registered"
-          series={stats?.daily.patients}
-          seriesLabel="new patients per day over the last fortnight"
-        />
-
-        <StatTile
-          tone="teal"
-          icon={IconActivity}
-          loading={stats === null}
-          value={stats?.visits ?? 0}
-          label="Screenings recorded"
-          series={stats?.daily.visits}
-          seriesLabel="screenings per day over the last fortnight"
-        />
-
-        <StatTile
-          tone="rose"
-          icon={IconAlert}
-          loading={stats === null}
-          value={stats?.red ?? 0}
-          label="Urgent (RED) results"
-          series={stats?.daily.red}
-          seriesLabel="urgent results per day over the last fortnight"
-        />
-
-        <StatTile
-          tone="amber"
-          icon={IconClock}
-          loading={stats === null}
-          value={stats?.amber ?? 0}
-          label="Follow-up (AMBER)"
-          series={stats?.daily.amber}
-          seriesLabel="follow-up results per day over the last fortnight"
-        />
-      </div>
-
-      {(stats?.openFollowUps ?? 0) > 0 && (
-        <>
-          <div className="section-head">
-            <h2>Needs your attention</h2>
-          </div>
-
-          <Link to="/follow-ups" className="list__item">
-            <span className="chip-icon chip-icon--amber"><IconClock size={19} /></span>
-            <span className="list__body">
-              <span className="list__title">
-                {stats?.openFollowUps} follow-up{stats?.openFollowUps === 1 ? '' : 's'} open
-              </span>
-              <span className="list__meta">Patients you referred who still need checking</span>
-            </span>
-            <span className="list__chevron"><IconChevronRight size={19} /></span>
-          </Link>
-        </>
-      )}
-
-      <div className="section-head">
-        <h2>Records waiting to send</h2>
-      </div>
-
-      {progress.pending === 0 ? (
-        <div className="card card--tint">
-          <div className="row" style={{ gap: 12 }}>
-            <span className="chip-icon chip-icon--teal"><IconCheck size={19} /></span>
-            <div>
-              <div style={{ fontWeight: 650 }}>Everything has been sent</div>
-              <div className="muted small" style={{ marginTop: 2 }}>
-                The health facility has all of your records.
-              </div>
-            </div>
-          </div>
-        </div>
-      ) : (
+      {/* Shown only when something is waiting; "everything has been sent" is the normal
+          state and the connection pop-up already says so when it changes. */}
+      {progress.pending > 0 && (
         <div className="card">
           <div className="row" style={{ gap: 12, alignItems: 'flex-start' }}>
-            <span className="chip-icon chip-icon--amber"><IconSync size={19} /></span>
+            <span className="chip-icon chip-icon--neutral"><IconSync size={19} /></span>
             <div style={{ flex: 1 }}>
               <div style={{ fontWeight: 650 }}>
                 {progress.pending} record{progress.pending === 1 ? '' : 's'} saved here
@@ -281,59 +186,5 @@ export function HomeScreen() {
         </div>
       )}
     </Screen>
-  );
-}
-
-/**
- * A metric tile with an optional inline fortnight chart.
- *
- * The chart appears only when the series carries signal — see `hasSignal`. A new device
- * shows the number alone rather than fourteen empty bars, because an empty chart reads as
- * "the feature is broken" rather than "you have not started yet".
- */
-function StatTile({
-  tone,
-  icon: Icon,
-  value,
-  label,
-  series,
-  seriesLabel,
-  loading,
-}: {
-  tone: 'teal' | 'rose' | 'amber';
-  icon: (props: { size?: number }) => JSX.Element;
-  value: number;
-  label: string;
-  series: number[] | undefined;
-  seriesLabel: string;
-  loading?: boolean;
-}) {
-  if (loading) {
-    return (
-      <div className="stat stat--loading" aria-hidden="true">
-        <span className="skeleton skeleton--icon" />
-        <span className="skeleton skeleton--value" />
-        <span className="skeleton skeleton--label" />
-      </div>
-    );
-  }
-
-  const total = series?.reduce((a, b) => a + b, 0) ?? 0;
-  const showChart = series !== undefined && hasSignal(series);
-
-  return (
-    <div className={`stat stat--${tone}`}>
-      <span className={`chip-icon chip-icon--sm chip-icon--${tone}`}>
-        <Icon size={17} />
-      </span>
-      <div className="stat__value"><CountUp value={value} /></div>
-      <div className="stat__label">{label}</div>
-
-      {showChart && (
-        <div className="stat__spark">
-          <Sparkbars values={series} label={`${total} ${seriesLabel}`} height={30} />
-        </div>
-      )}
-    </div>
   );
 }
