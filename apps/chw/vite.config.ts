@@ -46,9 +46,10 @@ export default defineConfig({
         // solid iris bands above and below a near-white page read as a template frame.
         // index.html refines this per theme once the page has loaded.
         theme_color: '#fafafa',
-        // The launch screen stays brand iris: a manifest cannot switch by theme, and a pale
-        // splash would flash at a dark-mode user on every launch.
-        background_color: '#4f4fd0',
+        // Also the canvas colour. Installed on Android, this can colour the system navigation
+        // bar as well as the launch screen, and an iris band under a near-white app looked
+        // cheap. The cost: a dark-mode user sees a pale launch screen for a moment.
+        background_color: '#fafafa',
         display: 'standalone',
         orientation: 'portrait',
         start_url: '/',
