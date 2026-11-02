@@ -24,6 +24,7 @@ export function applyTheme(choice: ThemeChoice): void {
 
   if (choice === 'system') html.removeAttribute('data-theme');
   else html.setAttribute('data-theme', choice);
+  syncChromeColour(choice);
 
   window.dispatchEvent(new CustomEvent<ThemeChoice>('firstline-theme', { detail: choice }));
 
@@ -33,4 +34,19 @@ export function applyTheme(choice: ThemeChoice): void {
   } catch {
     /* the choice still applies for this session */
   }
+}
+
+/** Canvas colours from the stylesheet, mirrored for the browser's own chrome. */
+const CHROME = { light: '#fafafa', dark: '#09090b' } as const;
+
+/**
+ * Keeps the phone's status and navigation bars the colour of the page. Each theme-color
+ * tag carries a prefers-color-scheme media query; with an explicit choice both take that
+ * theme's colour, and with 'system' each goes back to its own.
+ */
+function syncChromeColour(choice: ThemeChoice): void {
+  document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]').forEach((meta) => {
+    const own = meta.media.includes('dark') ? CHROME.dark : CHROME.light;
+    meta.content = choice === 'system' ? own : CHROME[choice];
+  });
 }

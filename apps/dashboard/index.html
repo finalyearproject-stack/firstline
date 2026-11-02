@@ -3,12 +3,24 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#4f4fd0" />
+    <!--
+      The phone's status bar (and, installed, its navigation bar) takes this colour. It
+      matches the page canvas, not the brand: solid iris bands above and below a near-white
+      page read as a template frame. One tag per system theme; the script below overrides
+      both when the user has picked light or dark in the app.
+    -->
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#fafafa" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#09090b" />
     <script>
       /* Applied before first paint so a saved theme never flashes the other one. */
       try {
         var t = localStorage.getItem('firstline-theme');
-        if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t);
+        if (t === 'light' || t === 'dark') {
+          document.documentElement.setAttribute('data-theme', t);
+          document.querySelectorAll('meta[name="theme-color"]').forEach(function (m) {
+            m.setAttribute('content', t === 'dark' ? '#09090b' : '#fafafa');
+          });
+        }
       } catch (e) {}
     </script>
     <meta name="description" content="Health facility dashboard for community screening programmes" />

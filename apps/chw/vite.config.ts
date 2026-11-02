@@ -42,9 +42,12 @@ export default defineConfig({
         name: 'FirstLine — VHT Screening',
         short_name: 'FirstLine',
         description: 'Health screening and referral for Village Health Teams, with offline support',
-        theme_color: '#4f4fd0',
-        // Brand iris rather than the light canvas: a manifest cannot switch by theme, and a
-        // pale splash flashes at a dark-mode user on every launch. Iris matches the header.
+        // The installed app's status and navigation bars take the page colour, not the brand:
+        // solid iris bands above and below a near-white page read as a template frame.
+        // index.html refines this per theme once the page has loaded.
+        theme_color: '#fafafa',
+        // The launch screen stays brand iris: a manifest cannot switch by theme, and a pale
+        // splash would flash at a dark-mode user on every launch.
         background_color: '#4f4fd0',
         display: 'standalone',
         orientation: 'portrait',
