@@ -19,5 +19,4 @@ coverage/
 ~$*
 
 # Local tool state.
-**/.claude/autoharness/
-.claude/settings.local.json
+.claude/
