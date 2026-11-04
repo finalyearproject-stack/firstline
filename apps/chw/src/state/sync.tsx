@@ -40,6 +40,7 @@ export function SyncProvider({ children }: { children: ReactNode }) {
     lastSyncAt: null,
     lastError: null,
     signInNeeded: false,
+    manualRuns: 0,
   });
 
   // The engine is created once. It reads the token through a ref so a refreshed token

@@ -41,6 +41,7 @@ const pillMemory = {
   shownTitle: null as string | null,
   /** When each message first showed, so a retry cannot restart its few seconds. */
   shownAt: new Map<string, number>(),
+  manualRuns: 0,
 };
 
 /** A VHT is with a patient: a status message says its piece for this long, then goes. */
@@ -117,7 +118,8 @@ const records = (n: number) => `${n} record${n === 1 ? '' : 's'}`;
  * The CHW must never wonder whether their work was saved, but must not be slowed down
  * by being told repeatedly. Each message shows for a few seconds and then goes. It comes
  * back only if the news changes: another record is saved, or everything has been sent.
- * Background retries do not bring it back. The one exception is a sign-in that has
+ * Background retries do not bring it back, but tapping to send always gets an answer.
+ * The one exception is a sign-in that has
  * expired, which stays until dismissed because nothing can be sent until it is dealt
  * with. The home screen shows unsent records for as long as there are any.
  */
@@ -138,7 +140,11 @@ export function ConnectionPill({ aboveNav, inline }: { aboveNav: boolean; inline
   const signInNeeded = state === 'ERROR' && Boolean(progress.signInNeeded);
   const key = `${state}:${signInNeeded ? 'sign-in' : 'status'}`;
 
-  if (calm || pillMemory.hiddenFor !== pending) {
+  // The VHT tapped to send: they asked, so they get an answer, whatever was said before.
+  const asked = pillMemory.manualRuns !== progress.manualRuns;
+  if (asked) pillMemory.manualRuns = progress.manualRuns;
+
+  if (calm || asked || pillMemory.hiddenFor !== pending) {
     pillMemory.hidden.clear();
     pillMemory.shownAt.clear();
     pillMemory.hiddenFor = pending;
@@ -146,6 +152,14 @@ export function ConnectionPill({ aboveNav, inline }: { aboveNav: boolean; inline
 
   // A background retry after the CHW has already been told is not news.
   const quietRetry = (state === 'SYNCING' || state === 'IDLE') && [...pillMemory.shownAt.keys()].some((shown) => shown !== key);
+
+  // A retry lasts a moment: a message still within its few seconds holds steady through it.
+  const held = quietRetry
+    ? [...pillMemory.shownAt].find(
+        ([shown, at]) => shown !== key && !pillMemory.hidden.has(shown) && Date.now() - at < NOTICE_MS,
+      )?.[0].split(':')[0]
+    : undefined;
+  const shownState = held ?? state;
 
   const hideNow = () => {
     pillMemory.hidden.add(key);
@@ -161,7 +175,7 @@ export function ConnectionPill({ aboveNav, inline }: { aboveNav: boolean; inline
       redraw((n) => n + 1);
     }, Math.max(0, left));
     return () => window.clearTimeout(timer);
-  }, [calm, key, pending, quietRetry, signInNeeded]);
+  }, [calm, key, pending, progress.manualRuns, quietRetry, signInNeeded]);
 
   useEffect(() => {
     if (!calm) {
@@ -192,7 +206,7 @@ export function ConnectionPill({ aboveNav, inline }: { aboveNav: boolean; inline
     );
   }
 
-  if (quietRetry || pillMemory.hidden.has(key)) {
+  if ((quietRetry && !held) || pillMemory.hidden.has(key)) {
     pillMemory.shownTitle = null;
     return null;
   }
@@ -202,7 +216,7 @@ export function ConnectionPill({ aboveNav, inline }: { aboveNav: boolean; inline
     </button>
   );
 
-  if (state === 'OFFLINE') {
+  if (shownState === 'OFFLINE') {
     const lastSent = lastSyncAt ? `Last sent ${whenLabel(new Date(lastSyncAt))}` : null;
     return (
       <StatusPill
@@ -224,7 +238,7 @@ export function ConnectionPill({ aboveNav, inline }: { aboveNav: boolean; inline
     );
   }
 
-  if (state === 'ERROR' && progress.signInNeeded) {
+  if (shownState === 'ERROR' && progress.signInNeeded) {
     return (
       <StatusPill
         tone="error"
@@ -250,7 +264,7 @@ export function ConnectionPill({ aboveNav, inline }: { aboveNav: boolean; inline
     );
   }
 
-  if (state === 'ERROR') {
+  if (shownState === 'ERROR') {
     return (
       <StatusPill
         tone="error"
@@ -277,9 +291,9 @@ export function ConnectionPill({ aboveNav, inline }: { aboveNav: boolean; inline
     <StatusPill
       tone="syncing"
       placement={placement}
-      icon={<IconSync size={20} className={state === 'SYNCING' ? 'toast__spin' : undefined} />}
-      title={state === 'SYNCING' ? 'Sending records' : 'Waiting to send'}
-      sub={state === 'SYNCING' && total > 0 ? `${sent} of ${total} sent` : `${records(pending)} on this phone`}
+      icon={<IconSync size={20} className={shownState === 'SYNCING' ? 'toast__spin' : undefined} />}
+      title={shownState === 'SYNCING' ? 'Sending records' : 'Waiting to send'}
+      sub={shownState === 'SYNCING' && total > 0 ? `${sent} of ${total} sent` : `${records(pending)} on this phone`}
     />
   );
 }

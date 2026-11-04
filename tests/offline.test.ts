@@ -527,6 +527,139 @@ describe('zero data loss (spec s13)', () => {
     // The CHW must not be told their work was sent when nothing was.
     expect(last).toMatchObject({ state: 'ERROR', lastSyncAt: null, lastError: 'HTTP 503' });
   });
+
+  describe('what the sync status tells the VHT', () => {
+    type Seen = { state: string; lastSyncAt: string | null; signInNeeded: boolean; lastError: string | null; manualRuns: number };
+
+    function watch(watched: SyncEngine): { latest(): Seen; stop(): void } {
+      let last: Seen | null = null;
+      const stop = watched.subscribe((progress) => { last = progress as Seen; });
+      return { latest: () => last as unknown as Seen, stop };
+    }
+
+    /** Everything is waiting out a backoff, so a run has nothing it may send yet. */
+    async function pushBackoffIntoFuture(): Promise<void> {
+      const entries = await db().queue.toArray();
+      await db().queue.bulkPut(entries.map((entry) => ({ ...entry, nextAttemptAt: Date.now() + 3_600_000 })));
+    }
+
+    it('leaves Last sent empty when a run had nothing to send', async () => {
+      goOnline();
+      const seen = watch(engine);
+      await engine.run();
+      seen.stop();
+      expect(seen.latest().lastSyncAt).toBeNull();
+    });
+
+    it('does not move Last sent forward when a later run sends nothing', async () => {
+      await captureEncounter();
+      goOnline();
+      await drainQueue(engine);
+      const seen = watch(engine);
+      const sentAt = seen.latest().lastSyncAt;
+      expect(sentAt).toBeTruthy();
+
+      await new Promise((resolve) => setTimeout(resolve, 15));
+      await engine.run();
+      seen.stop();
+      expect(seen.latest().lastSyncAt).toBe(sentAt);
+    });
+
+    it('does not move Last sent forward when every record was refused', async () => {
+      await captureEncounter();
+      goOnline();
+      const refusing = track(new SyncEngine(async (items) => ({
+        results: (items as Array<{ idempotencyKey: string }>).map((item) => ({
+          idempotencyKey: item.idempotencyKey,
+          status: 'REJECTED',
+          message: 'Invalid',
+        })),
+      }) as never));
+      const seen = watch(refusing);
+      await refusing.run();
+      seen.stop();
+      expect(seen.latest().lastSyncAt).toBeNull();
+    });
+
+    it('remembers Last sent after the app is reopened, even offline', async () => {
+      await captureEncounter();
+      goOnline();
+      await drainQueue(engine);
+      const before = watch(engine);
+      const sentAt = before.latest().lastSyncAt;
+      before.stop();
+
+      await restartApp();
+      goOffline();
+      const reopened = track(new SyncEngine(push as never));
+      const seen = watch(reopened);
+      await reopened.run();
+      seen.stop();
+      expect(seen.latest().lastSyncAt).toBe(sentAt);
+    });
+
+    it('keeps asking for sign-in while records wait out their backoff', async () => {
+      await captureEncounter();
+      goOnline();
+      const expired = Object.assign(new Error('Your session has expired.'), { isAuthFailure: true });
+      const rejected = track(new SyncEngine(async () => { throw expired; }));
+      const seen = watch(rejected);
+      await rejected.run();
+      await pushBackoffIntoFuture();
+
+      await rejected.run(); // what the 60-second sweep does
+      seen.stop();
+      expect(seen.latest()).toMatchObject({ state: 'ERROR', signInNeeded: true });
+      expect(await pendingCount()).toBe(6);
+    });
+
+    it('keeps saying the server cannot be reached while records wait out their backoff', async () => {
+      await captureEncounter();
+      goOnline();
+      const failing = track(new SyncEngine(async () => { throw new TypeError('Failed to fetch'); }));
+      const seen = watch(failing);
+      await failing.run();
+      await pushBackoffIntoFuture();
+
+      await failing.run();
+      seen.stop();
+      expect(seen.latest()).toMatchObject({ state: 'ERROR', lastError: 'Failed to fetch' });
+    });
+
+    it('clears the error once a retry succeeds', async () => {
+      await captureEncounter();
+      goOnline();
+      let working = false;
+      const recovering = track(new SyncEngine(async (items) => {
+        if (!working) throw new TypeError('Failed to fetch');
+        return push(items) as never;
+      }));
+      const seen = watch(recovering);
+      await recovering.run();
+      expect(seen.latest().state).toBe('ERROR');
+
+      working = true;
+      await recovering.runNow();
+      seen.stop();
+      expect(seen.latest()).toMatchObject({ state: 'IDLE', lastError: null, signInNeeded: false });
+      expect(seen.latest().lastSyncAt).toBeTruthy();
+      expect(await pendingCount()).toBe(0);
+    });
+
+    it('counts each time the VHT asks to send, so the screen can answer them', async () => {
+      goOnline();
+      const seen = watch(engine);
+      expect(seen.latest().manualRuns).toBe(0);
+      await engine.run();
+      expect(seen.latest().manualRuns).toBe(0); // an automatic run is not a request
+      await engine.runNow();
+      expect(seen.latest().manualRuns).toBe(1);
+      goOffline();
+      await engine.runNow();
+      seen.stop();
+      expect(seen.latest()).toMatchObject({ manualRuns: 2, state: 'OFFLINE' });
+    });
+  });
 });
 
 describe('synchronisation when the network returns (spec s12)', () => {

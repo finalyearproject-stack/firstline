@@ -15,7 +15,7 @@
  */
 import type { Table } from 'dexie';
 import type { SyncResult, SyncStatus } from '@rhm/shared';
-import { db, META_KEYS, setMeta, type StoredQueueEntry } from '../db/local.ts';
+import { db, getMeta, META_KEYS, setMeta, type StoredQueueEntry } from '../db/local.ts';
 
 export type SyncState = 'IDLE' | 'SYNCING' | 'OFFLINE' | 'ERROR';
 
@@ -32,6 +32,8 @@ export interface SyncProgress {
    * fix this; the VHT has to enter their password again. Records stay on the phone.
    */
   signInNeeded: boolean;
+  /** How many times the VHT has asked to send, so the screen knows to answer them. */
+  manualRuns: number;
 }
 
 export interface SyncSummary {
@@ -87,6 +89,7 @@ export class SyncEngine {
     lastSyncAt: null,
     lastError: null,
     signInNeeded: false,
+    manualRuns: 0,
   };
 
   private readonly push: (items: unknown[]) => Promise<{ results: SyncResult[] }>;
@@ -104,6 +107,13 @@ export class SyncEngine {
   private emit(patch: Partial<SyncProgress>): void {
     this.progress = { ...this.progress, ...patch };
     for (const listener of this.listeners) listener(this.progress);
+  }
+
+  /** A reopened app still knows when records last went, even with no signal. */
+  private async restoreLastSent(): Promise<void> {
+    if (this.progress.lastSyncAt) return;
+    const saved = await getMeta<string>(META_KEYS.lastSyncAt);
+    if (saved) this.emit({ lastSyncAt: saved });
   }
 
   async refreshPending(): Promise<number> {
@@ -145,6 +155,7 @@ export class SyncEngine {
    */
   async run(): Promise<SyncSummary | null> {
     if (this.running) return null;
+    await this.restoreLastSent();
     await this.refreshPending();
 
     if (!navigator.onLine) {
@@ -158,6 +169,7 @@ export class SyncEngine {
     try {
       let guard = 0;
       let stalled = false;
+      let attempted = false;
       for (;;) {
         // The guard bounds a single run so a persistently failing queue cannot spin.
         guard += 1;
@@ -166,6 +178,7 @@ export class SyncEngine {
         const batch = await this.nextBatch();
         if (batch.length === 0) break;
 
+        attempted = true;
         this.emit({ state: 'SYNCING', total: batch.length, sent: 0 });
 
         const processed = await this.sendBatch(batch);
@@ -183,17 +196,28 @@ export class SyncEngine {
         }
       }
 
-      // A stalled run sent nothing: keep the ERROR or OFFLINE state sendBatch reported,
-      // and do not record it as a successful sync.
+      // "Last sent" means the server took something, not that the engine looked. A sweep
+      // with nothing due, or a batch the server refused, leaves it where it was.
+      if (summary.applied + summary.duplicates + summary.conflicts > 0) {
+        const now = new Date().toISOString();
+        await setMeta(META_KEYS.lastSyncAt, now);
+        this.emit({ lastSyncAt: now });
+      }
+
+      // A stalled run: keep the ERROR or OFFLINE state sendBatch reported.
       if (stalled) {
         await this.refreshPending();
         return summary;
       }
 
-      const now = new Date().toISOString();
-      await setMeta(META_KEYS.lastSyncAt, now);
-      await this.refreshPending();
-      this.emit({ state: 'IDLE', lastSyncAt: now, lastError: null, signInNeeded: false, sent: 0, total: 0 });
+      const pending = await this.refreshPending();
+
+      // Nothing was tried, so nothing has changed: every record is waiting out its backoff.
+      // A problem already reported still stands, or a sweep would hide "sign in again" and
+      // the VHT would have no way to know records cannot go until they do.
+      if (!attempted && this.progress.state === 'ERROR' && pending > 0) return summary;
+
+      this.emit({ state: 'IDLE', lastError: null, signInNeeded: false, sent: 0, total: 0 });
       return summary;
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
@@ -412,14 +436,26 @@ export class SyncEngine {
    * wait minutes after fixing the problem would look like nothing happened.
    */
   async runNow(): Promise<SyncSummary | null> {
+    this.answerRequest();
     const waiting = await db().queue.where('status').equals('PENDING').toArray();
     const now = Date.now();
     await db().queue.bulkPut(waiting.map((entry) => ({ ...entry, nextAttemptAt: Math.min(entry.nextAttemptAt, now) })));
     return this.run();
   }
 
+  /** Shows at once that the tap was received, before the database and network reply. */
+  private answerRequest(): void {
+    this.emit({
+      manualRuns: this.progress.manualRuns + 1,
+      state: navigator.onLine ? 'SYNCING' : 'OFFLINE',
+      sent: 0,
+      total: 0,
+    });
+  }
+
   /** Clears the parked failures after a CHW or supervisor has reviewed them. */
   async retryFailed(): Promise<void> {
+    this.answerRequest();
     const failed = await db().queue.where('status').equals('FAILED').toArray();
     await db().queue.bulkPut(
       failed.map((entry) => ({
