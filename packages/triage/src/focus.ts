@@ -41,7 +41,7 @@ export interface FocusDefinition {
   preselected?: string[];
 }
 
-const DANGER = ['convulsions', 'confusion', 'unconscious', 'unable_to_feed', 'vomits_everything'];
+const DANGER = ['convulsions', 'unconscious', 'confusion', 'unable_to_feed', 'vomits_everything', 'chest_indrawing'];
 
 export const FOCUS_CATALOGUE: FocusDefinition[] = [
   {
@@ -86,7 +86,7 @@ export const FOCUS_CATALOGUE: FocusDefinition[] = [
     name: 'Sick child under 5',
     hint: 'Fever, cough, diarrhoea, MUAC',
     measurements: ['malariaRdt', 'breathing', 'muac', 'oedema', 'temperature', 'weight'],
-    symptoms: ['fever_felt', 'cough', 'difficulty_breathing', 'diarrhoea', 'weight_loss', ...DANGER],
+    symptoms: ['fever_felt', 'cough', 'difficulty_breathing', 'diarrhoea', 'weight_loss', 'blood_in_stool', ...DANGER],
   },
   {
     focus: 'GENERAL',
@@ -96,6 +96,21 @@ export const FOCUS_CATALOGUE: FocusDefinition[] = [
     symptoms: [],
   },
 ];
+
+/**
+ * The signs shown first on the symptom screen, whatever the focus. Each one produces a
+ * RED result by itself for this patient, which focus.test.ts holds to. The pregnancy
+ * signs are from WHO's "go immediately" list; blood in stool is a danger sign in the
+ * WHO/UNICEF sick child chart, and a next-day referral for an older patient.
+ */
+export function dangerSignsFor(focus: ScreeningFocus | null | undefined, patient: { age: number; sex: Sex }): string[] {
+  const signs = [...DANGER];
+  if (patient.age < 5) signs.push('blood_in_stool');
+  if (focus === 'PREGNANCY' && focusFits('PREGNANCY', patient)) {
+    signs.unshift('vaginal_bleeding', 'severe_abdominal_pain', 'difficulty_breathing', 'blurred_vision');
+  }
+  return signs;
+}
 
 export function focusDefinition(focus: ScreeningFocus | null | undefined): FocusDefinition {
   return FOCUS_CATALOGUE.find((f) => f.focus === focus) ?? FOCUS_CATALOGUE[FOCUS_CATALOGUE.length - 1];

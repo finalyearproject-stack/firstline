@@ -40,6 +40,8 @@ export const SYMPTOM_CATALOGUE: SymptomDefinition[] = [
   { code: 'convulsions', name: 'Fits / convulsions', category: 'Danger signs', icon: '!', asksDuration: false, booleanOnly: true },
   { code: 'confusion', name: 'Confused', category: 'Danger signs', icon: '?', asksDuration: false, booleanOnly: true },
   { code: 'unconscious', name: 'Not fully awake', category: 'Danger signs', icon: 'U', asksDuration: false, booleanOnly: true },
+  { code: 'chest_indrawing', name: 'Chest pulls in when breathing', category: 'Danger signs', icon: 'J', asksDuration: false, booleanOnly: true },
+  { code: 'blood_in_stool', name: 'Blood in stool', category: 'Stomach', icon: 'Q', asksDuration: false, booleanOnly: true },
 
   { code: 'pregnant', name: 'Pregnant', category: 'Maternal', icon: 'M', asksDuration: false, booleanOnly: true },
   { code: 'vaginal_bleeding', name: 'Bleeding', category: 'Maternal', icon: 'A', asksDuration: true },

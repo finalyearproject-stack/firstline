@@ -154,6 +154,15 @@ export const IconLungs = (p: IconProps) => (
   </Svg>
 );
 
+export const IconCup = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M5 9h12v5a5 5 0 0 1-5 5h-2a5 5 0 0 1-5-5V9Z" />
+    <path d="M17 10h1.5a2.5 2.5 0 0 1 0 5H17" />
+    <path d="M9 3.5v2.5" />
+    <path d="M13 3.5v2.5" />
+  </Svg>
+);
+
 export const IconStomach = (p: IconProps) => (
   <Svg {...p}>
     <path d="M8.5 3.8v4.4c0 2.6 1.7 3.6 4 4.3 2.5.8 4 2.2 4 4.6a3.9 3.9 0 0 1-7.8.2" />
@@ -299,11 +308,13 @@ const SYMPTOM_ICONS: Record<string, (p: IconProps) => JSX.Element> = {
   severe_abdominal_pain: IconStomach,
   diarrhoea: IconDroplet,
   vomits_everything: IconStomach,
-  unable_to_feed: IconStomach,
+  unable_to_feed: IconCup,
 
   convulsions: IconZap,
   confusion: IconQuestion,
   unconscious: IconMoon,
+  chest_indrawing: IconLungs,
+  blood_in_stool: IconDroplet,
 
   pregnant: IconBaby,
   vaginal_bleeding: IconDroplet,

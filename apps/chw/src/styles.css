@@ -2260,3 +2260,44 @@ a.list__item, :not(li) > .list__item {
   text-decoration: none;
 }
 .quiet-link:active { background: var(--surface-2); }
+
+/* Danger signs come first on the symptom screen and look different from ordinary symptoms. */
+.danger-group {
+  padding: 14px;
+  border: 1px solid color-mix(in srgb, var(--risk-red-line) 45%, transparent);
+  border-radius: var(--radius-xl);
+  background: var(--risk-red-soft);
+}
+.danger-group__head {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0;
+  font-size: 15.5px;
+  font-weight: 700;
+  color: var(--risk-red-ink);
+}
+.danger-group__hint { margin: 3px 0 12px; font-size: 13.5px; color: var(--ink-800); }
+.danger-group .symptom-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.symptom--danger { gap: 8px; min-height: 64px; padding: 10px; font-size: 14.5px; overflow-wrap: anywhere; }
+.symptom--danger .symptom__glyph { width: 32px; height: 32px; border-radius: 10px; background: var(--risk-red-soft); color: var(--risk-red-ink); }
+.symptom.symptom--danger[aria-pressed='true'] {
+  border-color: var(--risk-red-line);
+  background: var(--surface);
+  box-shadow: 0 0 0 2px var(--risk-red-line);
+}
+.symptom.symptom--danger[aria-pressed='true'] .symptom__glyph { background: var(--danger-fill); color: var(--white); }
+
+/* Moving between tabs must not make the same message slide in again. */
+.toast.toast--still { animation: none; }
+
+/* The pill sits in the page on the result screen, so it never covers the reasons. */
+.toast--inline {
+  position: static;
+  transform: none;
+  width: auto;
+  max-width: none;
+  margin-top: 16px;
+  box-shadow: none;
+  animation: none;
+}

@@ -29,6 +29,24 @@ import {
 export type PillTone = 'offline' | 'online' | 'syncing' | 'error';
 
 /**
+ * Every screen renders its own pill, so what the pill must remember between screens is
+ * kept here: moving to another tab must not bring back a dismissed message, replay the
+ * entrance animation, or restart the "offline since" time.
+ */
+const pillMemory = {
+  /** Messages already shown for the current number of unsent records. */
+  hidden: new Set<string>(),
+  hiddenFor: null as number | null,
+  offlineSince: null as Date | null,
+  shownTitle: null as string | null,
+  /** When each message first showed, so a retry cannot restart its few seconds. */
+  shownAt: new Map<string, number>(),
+};
+
+/** A VHT is with a patient: a status message says its piece for this long, then goes. */
+const NOTICE_MS = 4000;
+
+/**
  * A floating pill: round status badge, bold title, quiet second line. Only the badge
  * carries colour. When `more` is given the pill opens on tap to explain itself.
  */
@@ -45,16 +63,20 @@ export function StatusPill({
   title: string;
   sub: string;
   more?: ReactNode;
-  placement?: 'top' | 'bottom' | 'above-nav';
+  placement?: 'top' | 'bottom' | 'above-nav' | 'inline';
 }) {
   const [open, setOpen] = useState(false);
+  const [alreadyShown] = useState(() => pillMemory.shownTitle === title);
 
   // A new message starts closed.
   useEffect(() => setOpen(false), [title]);
+  useEffect(() => {
+    pillMemory.shownTitle = title;
+  }, [title]);
 
   return (
     <div
-      className={`toast toast--${tone} toast--${placement}${open ? ' toast--open' : ''}`}
+      className={`toast toast--${tone} toast--${placement}${open ? ' toast--open' : ''}${alreadyShown ? ' toast--still' : ''}`}
       role="status"
       aria-live="polite"
     >
@@ -92,24 +114,54 @@ function startOfDay(date: Date): number {
 const records = (n: number) => `${n} record${n === 1 ? '' : 's'}`;
 
 /**
- * The CHW must never wonder whether their work was saved. Whenever it is not all sent
- * (offline, sending, waiting or failing) the pill stays on screen and says so in plain
- * language; it goes away only once everything is sent, after a short confirmation.
+ * The CHW must never wonder whether their work was saved, but must not be slowed down
+ * by being told repeatedly. Each message shows for a few seconds and then goes. It comes
+ * back only if the news changes: another record is saved, or everything has been sent.
+ * Background retries do not bring it back. The one exception is a sign-in that has
+ * expired, which stays until dismissed because nothing can be sent until it is dealt
+ * with. The home screen shows unsent records for as long as there are any.
  */
-export function ConnectionPill({ aboveNav }: { aboveNav: boolean }) {
+export function ConnectionPill({ aboveNav, inline }: { aboveNav: boolean; inline?: boolean }) {
   const { progress, syncNow } = useSync();
   const navigate = useNavigate();
   const { state, pending, sent, total, lastSyncAt } = progress;
-  const placement = aboveNav ? 'above-nav' : 'bottom';
+  const placement = inline ? 'inline' : aboveNav ? 'above-nav' : 'bottom';
 
   const calm = state !== 'OFFLINE' && state !== 'ERROR' && state !== 'SYNCING' && pending === 0;
   const [confirming, setConfirming] = useState(false);
-  const [dismissed, setDismissed] = useState<string | null>(null);
+  const [, redraw] = useState(0);
   const wasBusy = useRef(!calm);
-  const offlineSince = useRef<Date | null>(null);
 
-  if (state === 'OFFLINE' && !offlineSince.current) offlineSince.current = new Date();
-  if (state !== 'OFFLINE') offlineSince.current = null;
+  if (state === 'OFFLINE' && !pillMemory.offlineSince) pillMemory.offlineSince = new Date();
+  if (state !== 'OFFLINE') pillMemory.offlineSince = null;
+
+  const signInNeeded = state === 'ERROR' && Boolean(progress.signInNeeded);
+  const key = `${state}:${signInNeeded ? 'sign-in' : 'status'}`;
+
+  if (calm || pillMemory.hiddenFor !== pending) {
+    pillMemory.hidden.clear();
+    pillMemory.shownAt.clear();
+    pillMemory.hiddenFor = pending;
+  }
+
+  // A background retry after the CHW has already been told is not news.
+  const quietRetry = (state === 'SYNCING' || state === 'IDLE') && [...pillMemory.shownAt.keys()].some((shown) => shown !== key);
+
+  const hideNow = () => {
+    pillMemory.hidden.add(key);
+    redraw((n) => n + 1);
+  };
+
+  useEffect(() => {
+    if (calm || signInNeeded || quietRetry || pillMemory.hidden.has(key)) return;
+    if (!pillMemory.shownAt.has(key)) pillMemory.shownAt.set(key, Date.now());
+    const left = NOTICE_MS - (Date.now() - pillMemory.shownAt.get(key)!);
+    const timer = window.setTimeout(() => {
+      pillMemory.hidden.add(key);
+      redraw((n) => n + 1);
+    }, Math.max(0, left));
+    return () => window.clearTimeout(timer);
+  }, [calm, key, pending, quietRetry, signInNeeded]);
 
   useEffect(() => {
     if (!calm) {
@@ -125,7 +177,10 @@ export function ConnectionPill({ aboveNav }: { aboveNav: boolean }) {
   }, [calm]);
 
   if (calm) {
-    if (!confirming) return null;
+    if (!confirming) {
+      pillMemory.shownTitle = null;
+      return null;
+    }
     return (
       <StatusPill
         tone="online"
@@ -137,11 +192,12 @@ export function ConnectionPill({ aboveNav }: { aboveNav: boolean }) {
     );
   }
 
-  // Dismissal lasts until the message changes, so a new problem always shows.
-  const key = `${state}:${pending}`;
-  if (dismissed === key) return null;
+  if (quietRetry || pillMemory.hidden.has(key)) {
+    pillMemory.shownTitle = null;
+    return null;
+  }
   const dismiss = (
-    <button type="button" className="toast__dismiss" onClick={() => setDismissed(key)}>
+    <button type="button" className="toast__dismiss" onClick={hideNow}>
       Dismiss
     </button>
   );
@@ -154,7 +210,7 @@ export function ConnectionPill({ aboveNav }: { aboveNav: boolean }) {
         placement={placement}
         icon={<IconCloudOff size={20} />}
         title="You’re offline"
-        sub={pending > 0 ? `${records(pending)} saved on this phone` : lastSent ?? `Since ${whenLabel(offlineSince.current!)}`}
+        sub={pending > 0 ? `${records(pending)} saved on this phone` : lastSent ?? `Since ${whenLabel(pillMemory.offlineSince!)}`}
         more={
           <>
             <p>
@@ -238,12 +294,15 @@ export function Screen({
   children,
   hideNav,
   action,
+  pillInline,
 }: {
   title: string;
   back?: boolean | string;
   children: ReactNode;
   hideNav?: boolean;
   action?: ReactNode;
+  /** Keep the connection pill in the page, for a screen whose text it must not cover. */
+  pillInline?: boolean;
 }) {
   const navigate = useNavigate();
 
@@ -266,9 +325,12 @@ export function Screen({
         </div>
       </header>
 
-      <main className="app-main">{children}</main>
+      <main className="app-main">
+        {children}
+        {pillInline && <ConnectionPill aboveNav={!hideNav} inline />}
+      </main>
 
-      <ConnectionPill aboveNav={!hideNav} />
+      {!pillInline && <ConnectionPill aboveNav={!hideNav} />}
       {!hideNav && <BottomNav />}
     </div>
   );

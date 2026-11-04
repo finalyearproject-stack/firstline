@@ -14,6 +14,7 @@ import {
   MEASUREMENTS,
   SYMPTOM_CATALOGUE,
   fastBreathingFrom,
+  dangerSignsFor,
   focusDefinition,
   focusFits,
   nextAncContact,
@@ -210,6 +211,114 @@ describe('pregnancy danger signs follow WHO PCPNC', () => {
     expect(outcome.referralUrgency).toBeNull();
     expect(outcome.recommendation).toMatch(/eight antenatal care contacts/);
     expect(outcome.recommendation).toMatch(/birth and emergency plan/);
+  });
+});
+
+describe('danger signs always count on their own', () => {
+  const sign = (code: string, durationDays = 1) => ({ symptomCode: code, severity: 'MODERATE' as const, durationDays });
+
+  const GENERAL = ['convulsions', 'unconscious', 'confusion', 'unable_to_feed', 'vomits_everything', 'chest_indrawing'];
+
+  it.each(GENERAL)('sends an adult with no fever immediately for %s', (code) => {
+    const outcome = triage({ age: 30, sex: 'MALE', symptoms: [sign(code)] });
+    expect(outcome.riskLevel).toBe('RED');
+    expect(outcome.referralRequired).toBe(true);
+    expect(outcome.referralUrgency).toBe('IMMEDIATE');
+  });
+
+  it.each(GENERAL)('never tells a pregnant woman with %s that there are no danger signs', (code) => {
+    const outcome = triage({ age: 26, sex: 'FEMALE', symptoms: [sign('pregnant'), sign(code)] });
+    expect(outcome.riskLevel).toBe('RED');
+    expect(outcome.recommendation).not.toMatch(/No danger signs/);
+  });
+
+  it('counts the sign even when the age is unknown', () => {
+    expect(triage({ symptoms: [sign('unconscious')] }).riskLevel).toBe('RED');
+  });
+
+  it('does not report the same sign twice for a child', () => {
+    const outcome = triage({ age: 2, symptoms: [sign('convulsions')] });
+    expect(outcome.triggeredRules).toContain('CHILD-RED-01');
+    expect(outcome.triggeredRules).not.toContain('GEN-RED-01');
+  });
+});
+
+describe('sick child danger signs follow the WHO/UNICEF community chart', () => {
+  const sign = (code: string, durationDays = 1) => ({ symptomCode: code, severity: 'MODERATE' as const, durationDays });
+  const child = (symptoms: ReturnType<typeof sign>[]) => triage({ age: 2, symptoms });
+
+  it.each<[string, ReturnType<typeof sign>]>([
+    ['cough for 14 days or more', sign('cough', 14)],
+    ['diarrhoea for 14 days or more', sign('diarrhoea', 14)],
+    ['fever for 7 days or more', sign('fever_felt', 7)],
+    ['blood in stool', sign('blood_in_stool')],
+    ['convulsions', sign('convulsions')],
+    ['not able to drink or feed', sign('unable_to_feed')],
+    ['vomiting everything', sign('vomits_everything')],
+    ['chest indrawing', sign('chest_indrawing')],
+    ['being unusually sleepy or unconscious', sign('unconscious')],
+    ['confusion', sign('confusion')],
+  ])('refers a child urgently for %s', (_name, symptom) => {
+    const outcome = child([symptom]);
+    expect(outcome.riskLevel).toBe('RED');
+    expect(outcome.referralRequired).toBe(true);
+    expect(outcome.referralUrgency).toBe('IMMEDIATE');
+  });
+
+  it.each<[string, ReturnType<typeof sign>]>([
+    ['a cough of under 14 days', sign('cough', 13)],
+    ['diarrhoea of under 14 days', sign('diarrhoea', 13)],
+    ['a fever of under 7 days', sign('fever_felt', 6)],
+  ])('does not treat %s as a danger sign', (_name, symptom) => {
+    expect(child([symptom]).riskLevel).not.toBe('RED');
+  });
+
+  it('sends an older patient with blood in stool within a day, not immediately', () => {
+    const outcome = triage({ age: 30, symptoms: [sign('blood_in_stool')] });
+    expect(outcome.riskLevel).toBe('AMBER');
+    expect(outcome.referralUrgency).toBe('WITHIN_24H');
+  });
+});
+
+describe('danger signs on the symptom screen', () => {
+  const adult = { age: 30, sex: 'MALE' as const };
+  const woman = { age: 26, sex: 'FEMALE' as const };
+  const toddler = { age: 2, sex: 'FEMALE' as const };
+
+  it('offers only symptoms that exist', () => {
+    const codes = new Set(SYMPTOM_CATALOGUE.map((s) => s.code));
+    for (const focus of SCREENING_FOCUSES) {
+      for (const patient of [adult, woman, toddler]) {
+        for (const code of dangerSignsFor(focus, patient)) expect(codes, `${focus}: ${code}`).toContain(code);
+      }
+    }
+  });
+
+  it('shows the general danger signs in every focus', () => {
+    for (const focus of SCREENING_FOCUSES) {
+      expect(dangerSignsFor(focus, adult)).toEqual(expect.arrayContaining(['convulsions', 'unconscious', 'chest_indrawing']));
+    }
+  });
+
+  it('adds blood in stool for a child and the WHO signs for a pregnancy check', () => {
+    expect(dangerSignsFor('CHILD', toddler)).toContain('blood_in_stool');
+    expect(dangerSignsFor('COUGH', adult)).not.toContain('blood_in_stool');
+    expect(dangerSignsFor('PREGNANCY', woman)).toEqual(expect.arrayContaining(['vaginal_bleeding', 'severe_abdominal_pain', 'difficulty_breathing', 'blurred_vision']));
+    expect(dangerSignsFor('FEVER', woman)).not.toContain('vaginal_bleeding');
+  });
+
+  it('makes every sign it lists produce a RED result for that patient', () => {
+    for (const focus of SCREENING_FOCUSES) {
+      for (const patient of [adult, toddler]) {
+        for (const code of dangerSignsFor(focus, patient)) {
+          expect(triage({ ...patient, symptoms: [{ symptomCode: code, severity: 'MODERATE', durationDays: 1 }] }).riskLevel, `${focus}: ${code}`).toBe('RED');
+        }
+      }
+    }
+    for (const code of dangerSignsFor('PREGNANCY', woman)) {
+      const outcome = triage({ ...woman, symptoms: [{ symptomCode: 'pregnant' }, { symptomCode: code, severity: 'MODERATE', durationDays: 1 }] });
+      expect(outcome.riskLevel, code).toBe('RED');
+    }
   });
 });
 

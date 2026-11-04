@@ -33,6 +33,7 @@ import {
   DEFAULT_RULESET,
   MEASUREMENTS,
   SYMPTOM_CATALOGUE,
+  dangerSignsFor,
   focusDefinition,
   focusFits,
   nextAncContact,
@@ -290,12 +291,15 @@ export function ScreeningScreen() {
   const offeredSymptoms = SYMPTOM_CATALOGUE.filter(
     (d) => d.category !== 'Maternal' || focusFits('PREGNANCY', patient),
   );
+  const dangerCodes = dangerSignsFor(focus, patient);
+  const dangerSigns = dangerCodes.flatMap((code) => SYMPTOM_CATALOGUE.filter((d) => d.code === code));
+  const shownFirst = new Set([...definition.symptoms, ...dangerCodes]);
   const extraMeasurements = MEASUREMENTS.filter((m) => !definition.measurements.includes(m) && fitsPatient(m));
   const show = (m: Measurement) =>
     definition.measurements.includes(m) || (showAllMeasurements && extraMeasurements.includes(m));
 
   return (
-    <Screen title={`${patient.firstName} ${patient.lastName}`} back>
+    <Screen title={`${patient.firstName} ${patient.lastName}`} back pillInline={step === 'RESULT'}>
       <Steps current={stepNumber} total={5} />
 
       {step === 'FOCUS' && (
@@ -482,10 +486,31 @@ export function ScreeningScreen() {
       {step === 'SYMPTOMS' && (
         <>
           <div className="step-label">Step 3 of 5 · {definition.name}</div>
-          <h2 className="mb-16">What is the patient feeling?</h2>
+          <h2 className="mb-16">What do you notice?</h2>
           <p className="muted small mb-16">Tap everything that applies. Tap again to remove.</p>
 
-          {groupByCategory(definition.symptoms, showAllSymptoms, offeredSymptoms).map(([category, items]) => (
+          <section className="danger-group mb-16" aria-labelledby="danger-signs-heading">
+            <h3 className="danger-group__head" id="danger-signs-heading">
+              <IconAlert size={18} /> Danger signs
+            </h3>
+            <p className="danger-group__hint">Check these first. Any one means refer now.</p>
+            <div className="symptom-grid">
+              {dangerSigns.map((item) => (
+                <button
+                  key={item.code}
+                  type="button"
+                  className="symptom symptom--danger"
+                  aria-pressed={symptoms.some((s) => s.code === item.code)}
+                  onClick={() => toggleSymptom(item.code, item.name)}
+                >
+                  <span className="symptom__glyph"><SymptomIcon code={item.code} size={19} /></span>
+                  <span>{item.name}</span>
+                </button>
+              ))}
+            </div>
+          </section>
+
+          {groupByCategory(definition.symptoms, dangerCodes, showAllSymptoms, offeredSymptoms).map(([category, items]) => (
             <div key={category} className="mb-16">
               <div className="card__label">{category}</div>
               <div className="symptom-grid">
@@ -510,7 +535,7 @@ export function ScreeningScreen() {
 
           {definition.symptoms.length > 0 && !showAllSymptoms && (
             <button type="button" className="btn btn--quiet btn--sm show-more mb-16" onClick={() => setShowAllSymptoms(true)}>
-              Show all symptoms ({offeredSymptoms.filter((d) => !definition.symptoms.includes(d.code)).length} more)
+              Show all symptoms ({offeredSymptoms.filter((d) => !shownFirst.has(d.code)).length} more)
             </button>
           )}
 
@@ -912,23 +937,25 @@ function referralCodeFor(referralId: string): string {
 }
 
 /**
- * Symptom tiles to show: the focus's own list first, in its order, under one heading,
- * then (when asked for, or always for a general check) the rest of the catalogue by
- * body area.
+ * Symptom tiles to show below the danger signs: the focus's own list first, in its
+ * order, under one heading, then (when asked for, or always for a general check) the
+ * rest of the catalogue by body area. A danger sign is only ever shown once.
  */
 function groupByCategory(
   focusCodes: string[],
+  dangerCodes: string[],
   showAll: boolean,
   offered: typeof SYMPTOM_CATALOGUE,
 ): Array<[string, typeof SYMPTOM_CATALOGUE]> {
   const out: Array<[string, typeof SYMPTOM_CATALOGUE]> = [];
   if (focusCodes.length > 0) {
-    out.push(['For this check', focusCodes.flatMap((code) => SYMPTOM_CATALOGUE.filter((d) => d.code === code))]);
+    const own = focusCodes.filter((code) => !dangerCodes.includes(code));
+    out.push(['For this check', own.flatMap((code) => SYMPTOM_CATALOGUE.filter((d) => d.code === code))]);
     if (!showAll) return out;
   }
   const groups = new Map<string, typeof SYMPTOM_CATALOGUE>();
   for (const definition of offered) {
-    if (focusCodes.includes(definition.code)) continue;
+    if (focusCodes.includes(definition.code) || dangerCodes.includes(definition.code)) continue;
     const existing = groups.get(definition.category) ?? [];
     existing.push(definition);
     groups.set(definition.category, existing);

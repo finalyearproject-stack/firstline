@@ -1,5 +1,5 @@
 {
-  "rulesetVersion": "1.2.0-TEMPLATE",
+  "rulesetVersion": "1.3.0-TEMPLATE",
   "metadata": {
     "name": "Rural CHW screening rule set (UNAPPROVED TEMPLATE)",
     "disclaimer": "THIS FILE IS A CONFIGURATION TEMPLATE, NOT AN APPROVED CLINICAL PROTOCOL. The thresholds below are placeholders drawn from widely published general-reference danger-sign values so that the engine can be exercised end to end. They have NOT been reviewed or approved by any clinical authority. Before any use involving real patients, the responsible health authority must review every rule, replace the thresholds with those of the locally approved protocol, record the approver in metadata.approvedBy and the approval date in metadata.approvedOn, and raise rulesetVersion. The application is a decision-support tool for trained Community Health Workers and never replaces the judgement of a qualified clinician.",
@@ -39,7 +39,7 @@
     },
     {
       "id": "CHILD-RED-01",
-      "name": "Child unable to feed or drink",
+      "name": "Danger sign in a child under five",
       "category": "child",
       "riskLevel": "RED",
       "priority": 99,
@@ -68,14 +68,26 @@
               {
                 "fact": "symptom.vomits_everything",
                 "op": "present"
+              },
+              {
+                "fact": "symptom.confusion",
+                "op": "present"
+              },
+              {
+                "fact": "symptom.chest_indrawing",
+                "op": "present"
+              },
+              {
+                "fact": "symptom.blood_in_stool",
+                "op": "present"
               }
             ]
           }
         ]
       },
-      "label": "General danger sign in a child under five",
+      "label": "Danger sign in a child under five",
       "recommendation": "This is an emergency. Refer the child to the health facility immediately and arrange transport now.",
-      "explanation": "In children under five these signs are the recognised general danger signs and are referred without delay."
+      "explanation": "These are danger signs in the WHO/UNICEF chart for caring for the sick child in the community. A child with any of them is referred urgently."
     },
     {
       "id": "FEVER-RED-02",
@@ -188,6 +200,56 @@
       "label": "Positive malaria test with a danger sign",
       "recommendation": "Severe malaria is possible. Refer to the health facility immediately with a referral letter. If you are trained in community case management, give the pre-referral treatment from your kit before the patient leaves.",
       "explanation": "Malaria with fits, confusion, inability to feed or vomiting everything can kill within hours and needs facility treatment."
+    },
+    {
+      "id": "GEN-RED-01",
+      "name": "General danger sign",
+      "category": "general",
+      "riskLevel": "RED",
+      "priority": 96,
+      "referralRequired": true,
+      "condition": {
+        "all": [
+          {
+            "not": {
+              "fact": "age",
+              "op": "lt",
+              "value": 5
+            }
+          },
+          {
+            "any": [
+              {
+                "fact": "symptom.convulsions",
+                "op": "present"
+              },
+              {
+                "fact": "symptom.unconscious",
+                "op": "present"
+              },
+              {
+                "fact": "symptom.confusion",
+                "op": "present"
+              },
+              {
+                "fact": "symptom.unable_to_feed",
+                "op": "present"
+              },
+              {
+                "fact": "symptom.vomits_everything",
+                "op": "present"
+              },
+              {
+                "fact": "symptom.chest_indrawing",
+                "op": "present"
+              }
+            ]
+          }
+        ]
+      },
+      "label": "Danger sign: fits, not fully awake, confused, cannot eat or drink, vomits everything, or chest pulling in",
+      "recommendation": "This is an emergency. Refer to the health facility immediately and arrange transport now. Do not leave the patient alone.",
+      "explanation": "Each of these signs is urgent by itself, with or without a fever or a positive malaria test."
     },
     {
       "id": "MAT-RED-01",
@@ -515,6 +577,69 @@
       "explanation": "Breathing difficulty is a danger sign that is escalated the same day."
     },
     {
+      "id": "CHILD-RED-05",
+      "name": "Long illness in a child under five",
+      "category": "child",
+      "riskLevel": "RED",
+      "priority": 92,
+      "referralRequired": true,
+      "condition": {
+        "all": [
+          {
+            "fact": "age",
+            "op": "lt",
+            "value": 5
+          },
+          {
+            "any": [
+              {
+                "all": [
+                  {
+                    "fact": "symptom.cough",
+                    "op": "present"
+                  },
+                  {
+                    "fact": "symptom.cough.durationDays",
+                    "op": "gte",
+                    "value": 14
+                  }
+                ]
+              },
+              {
+                "all": [
+                  {
+                    "fact": "symptom.diarrhoea",
+                    "op": "present"
+                  },
+                  {
+                    "fact": "symptom.diarrhoea.durationDays",
+                    "op": "gte",
+                    "value": 14
+                  }
+                ]
+              },
+              {
+                "all": [
+                  {
+                    "fact": "symptom.fever_felt",
+                    "op": "present"
+                  },
+                  {
+                    "fact": "symptom.fever_felt.durationDays",
+                    "op": "gte",
+                    "value": 7
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "label": "Cough or diarrhoea for 14 days or more, or fever for 7 days or more",
+      "recommendation": "Refer the child to the health facility urgently and give the caregiver a referral letter. If the child can drink, give fluids and continue feeding on the way.",
+      "explanation": "The WHO/UNICEF chart for caring for the sick child in the community treats an illness lasting this long as a danger sign that needs the health facility."
+    },
+    {
       "id": "CHILD-RED-04",
       "name": "Fever in an infant under one year",
       "category": "child",
@@ -825,6 +950,33 @@
       "label": "Positive malaria test",
       "recommendation": "If you are trained in community case management and the patient has no danger signs, treat with the malaria medicine in your kit as the national guidelines describe; otherwise refer to the health facility. Visit again in three days, and refer at once if the patient gets worse.",
       "explanation": "Uncomplicated malaria can be treated in the community by a trained VHT, but must be followed up."
+    },
+    {
+      "id": "GEN-AMBER-06",
+      "name": "Blood in stool in an older child or adult",
+      "category": "general",
+      "riskLevel": "AMBER",
+      "priority": 66,
+      "referralRequired": true,
+      "referralUrgency": "WITHIN_24H",
+      "condition": {
+        "all": [
+          {
+            "not": {
+              "fact": "age",
+              "op": "lt",
+              "value": 5
+            }
+          },
+          {
+            "fact": "symptom.blood_in_stool",
+            "op": "present"
+          }
+        ]
+      },
+      "label": "Blood in stool",
+      "recommendation": "Refer to the health facility within 24 hours to find the cause. Give oral rehydration solution if there is also diarrhoea, and go immediately if the patient becomes weak or cannot drink.",
+      "explanation": "Blood in stool needs a cause found at a facility. In a child under five it is a danger sign and is handled by a separate rule."
     },
     {
       "id": "GEN-AMBER-01",
