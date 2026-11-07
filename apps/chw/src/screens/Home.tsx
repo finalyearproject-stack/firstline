@@ -17,15 +17,11 @@ import { useSession, useUnlocked } from '../state/session.tsx';
 import { useSync } from '../state/sync.tsx';
 
 /**
- * Greeting in Luganda first, the language of the demonstration villages, with English
- * after it: "Wasuze otya" (how did you sleep) in the morning, "Osiibye otya" (how has
- * your day been) after midday.
+ * Greeting in Luganda, the language of the demonstration villages: "Wasuze otya" (how
+ * did you sleep) in the morning, "Osiibye otya" (how has your day been) after midday.
  */
 function greetingFor(date = new Date()): string {
-  const hour = date.getHours();
-  if (hour < 12) return 'Wasuze otya · Good morning';
-  if (hour < 17) return 'Osiibye otya · Good afternoon';
-  return 'Osiibye otya · Good evening';
+  return date.getHours() < 12 ? 'Wasuze otya' : 'Osiibye otya';
 }
 
 /** "Saturday, 31 October": where the VHT is in their week, at a glance. */
@@ -75,11 +71,10 @@ export function HomeScreen() {
       }
     >
       <div style={{ marginBottom: 18 }}>
-        <div className="greeting">{greetingFor()},</div>
         <h1 className="display">
-          {firstNameOf(user?.name)}
+          {greetingFor()}, {firstNameOf(user?.name)}
           <br />
-          <em>{due > 0 ? `${due} follow-up${due === 1 ? '' : 's'} due.` : 'ready to screen.'}</em>
+          <em>{due > 0 ? `${due} follow-up${due === 1 ? '' : 's'} due` : 'Ready to screen'}</em>
         </h1>
         <div className="muted small" style={{ marginTop: 8 }}>
           {todayLabel()}
@@ -169,8 +164,7 @@ export function HomeScreen() {
                 {progress.pending} record{progress.pending === 1 ? '' : 's'} saved here
               </div>
               <p className="muted small" style={{ marginTop: 4, marginBottom: 0 }}>
-                They are safe on this phone and will go automatically as soon as you have a
-                connection. You do not need to do anything.
+                Safe on this phone. They send by themselves when there is signal.
               </p>
             </div>
           </div>

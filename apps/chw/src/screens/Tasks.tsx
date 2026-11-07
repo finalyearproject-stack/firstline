@@ -158,9 +158,7 @@ export function SyncScreen() {
 
       {progress.pending > 0 && (
         <Alert kind="info">
-          Records waiting here are <strong>safe</strong>. They are stored on this phone and
-          will be sent automatically when you have a connection. You do not need to do
-          anything.
+          Records waiting here are <strong>safe</strong> on this phone. They send by themselves when there is signal.
         </Alert>
       )}
 
@@ -211,8 +209,7 @@ export function SyncScreen() {
 
       {progress.lastError && progress.state === 'ERROR' && (
         <Alert kind="warning">
-          Could not reach the server. This is normal with no signal — your work is saved
-          and will send later.
+          Could not reach the server. Your work is saved and will send later.
         </Alert>
       )}
 
@@ -277,8 +274,7 @@ function RenewSignIn({ onDone }: { onDone(): void }) {
     <div className="card">
       <div className="card__label">Sign in again</div>
       <p className="small" style={{ marginTop: 0 }}>
-        Your sign-in to the server has expired, so records cannot be sent. Everything is still
-        safe on this phone. Enter the password for <strong>{user.username}</strong> to continue.
+        Your sign-in has expired. Records are safe on this phone. Enter the password for <strong>{user.username}</strong> to send them.
       </p>
       <input
         className="input mb-16"

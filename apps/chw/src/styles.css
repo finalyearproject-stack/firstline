@@ -2301,3 +2301,39 @@ a.list__item, :not(li) > .list__item {
   box-shadow: none;
   animation: none;
 }
+
+/* ================================================================== quieter surfaces */
+/* Cards and tiles sit on the canvas without outlines: a soft shadow in light mode, a
+   lighter fill in dark mode, where shadows do not show. Borders stay where they mean
+   something: inputs, selected tiles, the danger group, results and alerts. */
+:root { --shadow-soft: 0 1px 2px rgba(0, 0, 0, 0.05), 0 2px 10px -4px rgba(0, 0, 0, 0.08); }
+.card, .stat, .today, .shortcut, .symptom,
+.list:has(> li > .list__item), a.list__item, :not(li) > .list__item {
+  border-color: transparent;
+  box-shadow: var(--shadow-soft);
+}
+/* Rows inside a grouped list share the list's surface; the thin lines between rows stay. */
+.list > li > .list__item, .list > li > a.list__item { box-shadow: none; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .card,
+  :root:not([data-theme='light']) .stat,
+  :root:not([data-theme='light']) .list:has(> li > .list__item),
+  :root:not([data-theme='light']) .list__item,
+  :root:not([data-theme='light']) .today,
+  :root:not([data-theme='light']) .shortcut,
+  :root:not([data-theme='light']) .symptom { background: var(--surface-2); box-shadow: none; }
+}
+:root[data-theme='dark'] .card,
+:root[data-theme='dark'] .stat,
+:root[data-theme='dark'] .list:has(> li > .list__item),
+:root[data-theme='dark'] .list__item,
+:root[data-theme='dark'] .today,
+:root[data-theme='dark'] .shortcut,
+:root[data-theme='dark'] .symptom { background: var(--surface-2); box-shadow: none; }
+
+/* Letter spacing is tightened only on large headings; body text and small labels keep
+   the font's own spacing, which reads better at small sizes. */
+body, h2, h3, .app-header__title, .greeting, .btn, .field__label, .list__title, .list__avatar,
+.stat__label, .stat-strip__value, .toast__title, .auth__name, .result__action, .ldoc__title {
+  letter-spacing: normal;
+}

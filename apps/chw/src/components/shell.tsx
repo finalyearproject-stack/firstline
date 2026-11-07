@@ -249,8 +249,7 @@ export function ConnectionPill({ aboveNav, inline }: { aboveNav: boolean; inline
         more={
           <>
             <p>
-              Your sign-in to the server has expired. Nothing is lost: enter your password once
-              and FirstLine will send everything.
+              Your sign-in has expired. Nothing is lost: enter your password once to send everything.
             </p>
             <div className="toast__actions">
               <button type="button" className="toast__dismiss toast__dismiss--primary" onClick={() => navigate('/sync')}>
@@ -535,7 +534,14 @@ export function Alert({
 
 export function Steps({ current, total }: { current: number; total: number }) {
   return (
-    <div className="steps" aria-label={`Step ${current} of ${total}`}>
+    <div
+      className="steps"
+      role="progressbar"
+      aria-valuemin={1}
+      aria-valuemax={total}
+      aria-valuenow={current}
+      aria-valuetext={`Step ${current} of ${total}`}
+    >
       {Array.from({ length: total }, (_, index) => (
         <div
           key={index}

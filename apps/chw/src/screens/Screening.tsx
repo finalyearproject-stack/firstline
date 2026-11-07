@@ -304,10 +304,9 @@ export function ScreeningScreen() {
 
       {step === 'FOCUS' && (
         <>
-          <div className="step-label">Step 1 of 5</div>
           <h2 className="mb-16">What are you screening for?</h2>
           <p className="muted small mb-16">
-            This chooses which questions come first. Every danger sign is still checked.
+            Danger signs are always checked.
           </p>
           <FocusPicker patient={patient} onPick={chooseFocus} />
         </>
@@ -315,11 +314,9 @@ export function ScreeningScreen() {
 
       {step === 'VITALS' && (
         <>
-          <div className="step-label">Step 2 of 5 · {definition.name}</div>
           <h2 className="mb-16">Measurements</h2>
           <p className="muted small mb-16">
-            Leave anything blank that you did not measure. Blank is not the same as
-            normal — the triage rules will simply skip it.
+            Leave blank anything you did not measure. Blank is not counted as normal.
           </p>
 
           {show('pregnancyWeeks') && (
@@ -485,15 +482,14 @@ export function ScreeningScreen() {
 
       {step === 'SYMPTOMS' && (
         <>
-          <div className="step-label">Step 3 of 5 · {definition.name}</div>
           <h2 className="mb-16">What do you notice?</h2>
-          <p className="muted small mb-16">Tap everything that applies. Tap again to remove.</p>
+          <p className="muted small mb-16">Tap all that apply.</p>
 
           <section className="danger-group mb-16" aria-labelledby="danger-signs-heading">
             <h3 className="danger-group__head" id="danger-signs-heading">
               <IconAlert size={18} /> Danger signs
             </h3>
-            <p className="danger-group__hint">Check these first. Any one means refer now.</p>
+            <p className="danger-group__hint">Any one means refer now.</p>
             <div className="symptom-grid">
               {dangerSigns.map((item) => (
                 <button
@@ -624,7 +620,6 @@ export function ScreeningScreen() {
 
       {step === 'REFERRAL' && outcome && (
         <>
-          <div className="step-label">Step 5 of 5</div>
           <h2 className="mb-16">Referral and follow-up</h2>
 
           <div className="card">
@@ -639,9 +634,7 @@ export function ScreeningScreen() {
             />
             {outcome.referralRequired && !makeReferral && (
               <Alert kind="warning">
-                The screening found danger signs that the protocol says should be
-                referred. Only skip this if you have another reason, and record it in the
-                notes.
+                This screening found danger signs that need referral. Skip only for a good reason, and note why.
               </Alert>
             )}
           </div>
@@ -741,8 +734,7 @@ export function ScreeningScreen() {
           </div>
 
           <p className="muted small center mt-16">
-            Saved on this phone immediately. It will be sent to the facility automatically
-            when you have a connection.
+            Saved on this phone. It sends to the facility when there is signal.
           </p>
         </>
       )}
@@ -790,7 +782,6 @@ function TriageResultView({
 
   return (
     <>
-      <div className="step-label">Step 4 of 5</div>
 
       <div className={`result result--${outcome.riskLevel}`}>
         <div className="result__banner">
