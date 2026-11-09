@@ -2,7 +2,7 @@
  * Application shell: header, the connection status pill, and bottom
  * navigation. Shared UI primitives live here too, so the screens stay readable.
  */
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { cloneElement, useEffect, useRef, useState, type ReactElement, type ReactNode } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import type { RiskLevel, SyncStatus } from '@rhm/shared';
 import { useSync } from '../state/sync.tsx';
@@ -58,6 +58,7 @@ export function StatusPill({
   sub,
   more,
   placement = 'top',
+  leaving = false,
 }: {
   tone: PillTone;
   icon: ReactNode;
@@ -65,6 +66,8 @@ export function StatusPill({
   sub: string;
   more?: ReactNode;
   placement?: 'top' | 'bottom' | 'above-nav' | 'inline';
+  /** Set while the pill plays its exit, so it can slide away instead of vanishing. */
+  leaving?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [alreadyShown] = useState(() => pillMemory.shownTitle === title);
@@ -77,7 +80,7 @@ export function StatusPill({
 
   return (
     <div
-      className={`toast toast--${tone} toast--${placement}${open ? ' toast--open' : ''}${alreadyShown ? ' toast--still' : ''}`}
+      className={`toast toast--${tone} toast--${placement}${open ? ' toast--open' : ''}${alreadyShown ? ' toast--still' : ''}${leaving ? ' toast--leaving' : ''}`}
       role="status"
       aria-live="polite"
     >
@@ -124,6 +127,36 @@ const records = (n: number) => `${n} record${n === 1 ? '' : 's'}`;
  * with. The home screen shows unsent records for as long as there are any.
  */
 export function ConnectionPill({ aboveNav, inline }: { aboveNav: boolean; inline?: boolean }) {
+  return <Leaving>{useConnectionPill(aboveNav, inline)}</Leaving>;
+}
+
+/** How long a pill takes to slide away: a little quicker than it took to arrive. */
+const EXIT_MS = 200;
+
+/**
+ * Keeps the last pill on screen for its exit when the pill below returns nothing, and
+ * steps aside at once if a new message arrives meanwhile.
+ */
+function Leaving({ children }: { children: ReactElement | null }) {
+  const last = useRef<ReactElement | null>(null);
+  const [, redraw] = useState(0);
+  const present = children !== null;
+  if (present) last.current = children;
+
+  useEffect(() => {
+    if (present || !last.current) return;
+    const timer = window.setTimeout(() => {
+      last.current = null;
+      redraw((n) => n + 1);
+    }, EXIT_MS);
+    return () => window.clearTimeout(timer);
+  }, [present]);
+
+  if (children) return children;
+  return last.current ? cloneElement(last.current, { leaving: true }) : null;
+}
+
+function useConnectionPill(aboveNav: boolean, inline?: boolean): ReactElement | null {
   const { progress, syncNow } = useSync();
   const navigate = useNavigate();
   const { state, pending, sent, total, lastSyncAt } = progress;

@@ -2,7 +2,7 @@
  * Patient list, registration and the patient record.
  */
 import { useCallback, useEffect, useState } from 'react';
-import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { CONSENT_STATES, SEXES, describeMeasurements, type ConsentStatus, type RiskLevel, type Sex } from '@rhm/shared';
 import { ReferralLetter, focusName } from '../components/screening-parts.tsx';
 import {
@@ -24,6 +24,7 @@ import {
 import {
   IconActivity,
   IconAlert,
+  IconCheck,
   IconChevronRight,
   IconClock,
   IconPatients,
@@ -299,6 +300,15 @@ export function NewPatientScreen() {
 export function PatientDetailScreen() {
   const { key, user } = useUnlocked();
   const { id } = useParams<{ id: string }>();
+  // Arriving straight from "Save screening": confirm it, once.
+  const location = useLocation();
+  const [justSaved] = useState(() => Boolean((location.state as { saved?: boolean } | null)?.saved));
+  const navigateTo = useNavigate();
+  useEffect(() => {
+    // Forget it straight away, so going back to the record or reloading does not repeat it.
+    if (justSaved) navigateTo(location.pathname, { replace: true, state: null });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [patient, setPatient] = useState<PatientView | null>(null);
   const [history, setHistory] = useState<VisitBundleView[]>([]);
   const [loading, setLoading] = useState(true);
@@ -336,6 +346,12 @@ export function PatientDetailScreen() {
 
   return (
     <Screen title={`${patient.firstName} ${patient.lastName}`} back="/patients">
+      {justSaved && (
+        <div className="saved-note" role="status">
+          <span className="saved-note__tick" aria-hidden="true"><IconCheck size={16} /></span>
+          Screening saved
+        </div>
+      )}
       <div className="card">
         <div className="row" style={{ gap: 14, alignItems: 'flex-start' }}>
           <span

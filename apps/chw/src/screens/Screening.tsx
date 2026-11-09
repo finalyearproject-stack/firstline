@@ -265,7 +265,7 @@ export function ScreeningScreen() {
       if (makeReferral) {
         await setMeta(META_KEYS.recentFacilities, rememberFacility(recentFacilities, destination));
       }
-      navigate(`/patients/${patient.id}`, { replace: true });
+      navigate(`/patients/${patient.id}`, { replace: true, state: { saved: true } });
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'Could not save the screening.');
       setBusy(false);

@@ -2195,3 +2195,7 @@ body, h3, h4, .card__title, .alert-item__title, .sidebar__title, .kpi__label, .b
 /* Skeletons appear only if loading takes longer than a moment. */
 .loading { animation: loading-appear 1ms linear 150ms both; }
 @keyframes loading-appear { from { opacity: 0; } to { opacity: 1; } }
+
+/* A firmer press, matching the VHT app. */
+.btn:active:not(:disabled) { transform: scale(0.97); }
+@media (prefers-reduced-motion: reduce) { .btn:active:not(:disabled) { transform: none; } }

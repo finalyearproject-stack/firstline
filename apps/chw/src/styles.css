@@ -2374,3 +2374,62 @@ span.skeleton-wait { display: inline-block; }
 :root[data-theme='dark'] .today .skeleton {
   background-image: linear-gradient(90deg, var(--ink-200) 25%, var(--ink-300) 50%, var(--ink-200) 75%);
 }
+
+/* ================================================================== motion */
+:root { --ease-in: cubic-bezier(0.4, 0, 1, 1); }
+
+/* The pill leaves the way it came, a little faster than it arrived. */
+.toast.toast--leaving { pointer-events: none; animation: toast-leave-down 0.2s var(--ease-in) both; }
+.toast--top.toast--leaving { animation-name: toast-leave-up; }
+.toast--inline.toast--leaving { animation-name: toast-leave-fade; }
+@keyframes toast-leave-down { to { opacity: 0; transform: translate(-50%, 12px); } }
+@keyframes toast-leave-up   { to { opacity: 0; transform: translate(-50%, -12px); } }
+@keyframes toast-leave-fade { to { opacity: 0; } }
+
+/* A tap is felt: buttons and tiles press in visibly, at once, and spring back. */
+.btn:active:not(:disabled), .symptom:active, .shortcut:active, .chip:active { transform: scale(0.97); }
+.card:active, .stat:active { transform: scale(0.98); }
+.shortcut { transition: transform 0.12s var(--ease-out), border-color 0.14s ease, box-shadow 0.14s ease; }
+
+/* A saved screening is confirmed on the record: the tick pops in, then the note goes. */
+.saved-note {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  overflow: hidden;
+  margin-bottom: 14px;
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: var(--tint-teal);
+  color: var(--ink-900);
+  font-weight: 650;
+  animation: saved-note 2.8s var(--ease-out) both;
+}
+.saved-note__tick {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--brand-700);
+  color: var(--white);
+  animation: saved-tick 0.45s var(--ease-out) 0.12s both;
+}
+@keyframes saved-note {
+  0%   { opacity: 0; transform: translateY(-6px); max-height: 60px; }
+  10%  { opacity: 1; transform: none; }
+  85%  { opacity: 1; max-height: 60px; margin-bottom: 14px; padding-top: 10px; padding-bottom: 10px; }
+  100% { opacity: 0; max-height: 0; margin-bottom: 0; padding-top: 0; padding-bottom: 0; }
+}
+@keyframes saved-tick {
+  0%   { transform: scale(0.4); }
+  60%  { transform: scale(1.12); }
+  100% { transform: scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast.toast--leaving, .saved-note, .saved-note__tick { animation: none; }
+  .btn:active:not(:disabled), .symptom:active, .shortcut:active, .chip:active,
+  .card:active, .stat:active { transform: none; }
+}
