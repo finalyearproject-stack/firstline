@@ -2433,3 +2433,7 @@ span.skeleton-wait { display: inline-block; }
   .btn:active:not(:disabled), .symptom:active, .shortcut:active, .chip:active,
   .card:active, .stat:active { transform: none; }
 }
+
+/* The FirstLine mark before the home title. */
+.app-header__title:has(.app-header__mark) { display: flex; align-items: center; gap: 10px; }
+.app-header__mark { flex: none; color: var(--brand-700); border-radius: 7px; }

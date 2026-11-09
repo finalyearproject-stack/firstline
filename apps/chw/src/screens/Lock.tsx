@@ -6,7 +6,7 @@
  * with a live status rather than a standing warning.
  */
 import { useEffect, useRef, useState } from 'react';
-import { Alert, StatusPill, Steps, whenLabel } from '../components/shell.tsx';
+import { Alert, StatusPill, Steps, whenLabel, AppMark } from '../components/shell.tsx';
 import { IconArrowRight, IconCloud, IconCloudOff, IconLock } from '../components/icons.tsx';
 import { ATTEMPT_LIMIT, useSession } from '../state/session.tsx';
 import { useOnline } from '../state/sync.tsx';
@@ -25,11 +25,7 @@ const DASHBOARD_URL: string | undefined =
 function Brand() {
   return (
     <div className="auth__brand">
-      <svg className="auth__mark" viewBox="0 0 64 64" aria-hidden="true">
-        <rect width="64" height="64" rx="14" fill="currentColor" />
-        <path d="M16 24h32" stroke="#fff" strokeWidth="7" />
-        <path d="M16 36h32M16 46h20" stroke="#fff" strokeWidth="3.6" opacity="0.65" />
-      </svg>
+      <AppMark size={40} className="auth__mark" />
       <div>
         <div className="auth__name">FirstLine</div>
         <div className="auth__tag">Village Health Team screening</div>

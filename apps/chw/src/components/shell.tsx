@@ -331,6 +331,28 @@ function useConnectionPill(aboveNav: boolean, inline?: boolean): ReactElement | 
 }
 
 // ---------------------------------------------------------------------------
+// Brand mark
+// ---------------------------------------------------------------------------
+
+/**
+ * The FirstLine mark: a page of the VHT register, its first line heavy and its margin
+ * ruled, which is the product's name drawn literally. The same drawing is the app icon.
+ */
+export function AppMark({ size = 24, className }: { size?: number; className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 64 64" width={size} height={size} aria-hidden="true">
+      <rect width="64" height="64" rx="14" fill="currentColor" />
+      <rect x="17" y="12" width="30" height="40" rx="3.5" fill="#fff" />
+      <g stroke="currentColor" strokeLinecap="round">
+        <path d="M23.5 12V52" strokeWidth="1.6" opacity="0.35" strokeLinecap="butt" />
+        <path d="M27 22H41" strokeWidth="4.2" />
+        <path d="M27 30.5H41M27 38H41M27 45.5H36" strokeWidth="2.2" opacity="0.55" />
+      </g>
+    </svg>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Skeletons
 // ---------------------------------------------------------------------------
 
@@ -384,8 +406,11 @@ export function Screen({
   hideNav,
   action,
   pillInline,
+  brand,
 }: {
   title: string;
+  /** Show the FirstLine mark before the title (the home screen). */
+  brand?: boolean;
   back?: boolean | string;
   children: ReactNode;
   hideNav?: boolean;
@@ -409,7 +434,10 @@ export function Screen({
               <IconChevronLeft size={22} />
             </button>
           )}
-          <div className="app-header__title">{title}</div>
+          <div className="app-header__title">
+            {brand && <AppMark size={26} className="app-header__mark" />}
+            {title}
+          </div>
           {action}
         </div>
       </header>

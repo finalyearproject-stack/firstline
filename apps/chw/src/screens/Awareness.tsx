@@ -161,11 +161,21 @@ export function AwarenessScreen() {
       {visible.length === 0 ? (
         <Empty
           icon={IconLearn}
-          title="Nothing here yet"
+          title={
+            term.trim()
+              ? `No topics match “${term.trim()}”`
+              : category
+                ? 'No topics in this group'
+                : `No ${AWARENESS_LANGUAGES.find((option) => option.code === language)?.label ?? ''} topics on this phone yet`
+          }
           body={
-            language === 'en'
-              ? 'No topics match your search.'
-              : 'There is no content in this language on this phone yet.'
+            term.trim()
+              ? 'Try one word, such as malaria or cough.'
+              : category
+                ? 'Choose another group, or show all topics.'
+                : language === 'en'
+                  ? 'Topics appear here once they are on this phone.'
+                  : 'Switch to English to read every topic.'
           }
         />
       ) : (

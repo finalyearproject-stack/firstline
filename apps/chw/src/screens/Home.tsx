@@ -58,6 +58,7 @@ export function HomeScreen() {
   return (
     <Screen
       title="FirstLine"
+      brand
       action={
         <button
           type="button"
