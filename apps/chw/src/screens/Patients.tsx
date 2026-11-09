@@ -19,6 +19,7 @@ import {
   formatDate,
   initials,
   relativeDay,
+  SkeletonList,
 } from '../components/shell.tsx';
 import {
   IconActivity,
@@ -84,7 +85,7 @@ export function PatientListScreen() {
       </Link>
 
       {loading ? (
-        <p className="muted">Loading…</p>
+        <SkeletonList rows={5} />
       ) : patients.length === 0 ? (
         <Empty
           icon={term ? IconSearch : IconPatients}
@@ -317,7 +318,7 @@ export function PatientDetailScreen() {
   if (loading) {
     return (
       <Screen title="Patient" back>
-        <p className="muted">Loading…</p>
+        <SkeletonList rows={3} header />
       </Screen>
     );
   }

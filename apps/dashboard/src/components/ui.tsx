@@ -693,7 +693,7 @@ export function Badge({ kind, children }: { kind: string; children?: ReactNode }
 
 export function Loading({ rows = 4 }: { rows?: number }) {
   return (
-    <div aria-busy="true" aria-live="polite">
+    <div className="loading" aria-busy="true" aria-live="polite">
       <span className="sr-only">Loading</span>
       {Array.from({ length: rows }, (_, index) => (
         <div

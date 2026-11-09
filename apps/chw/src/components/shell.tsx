@@ -298,6 +298,49 @@ export function ConnectionPill({ aboveNav, inline }: { aboveNav: boolean; inline
 }
 
 // ---------------------------------------------------------------------------
+// Skeletons
+// ---------------------------------------------------------------------------
+
+/**
+ * Placeholder rows shaped like the list being loaded. They fade in only after a short
+ * wait (in CSS), so on a phone that answers at once nothing flashes; on a slow phone
+ * with many records the shape of the page appears straight away.
+ */
+export function SkeletonList({ rows = 4, header = false }: { rows?: number; header?: boolean }) {
+  return (
+    <div className="skeleton-wait" role="status" aria-busy="true">
+      <span className="sr-only">Loading</span>
+      {header && (
+        <div className="skeleton-head" aria-hidden="true">
+          <span className="skeleton skeleton--title" />
+          <span className="skeleton skeleton--line" style={{ width: '64%' }} />
+        </div>
+      )}
+      <div className="skeleton-list" aria-hidden="true">
+        {Array.from({ length: rows }, (_, index) => (
+          <div key={index} className="skeleton-row">
+            <span className="skeleton skeleton--avatar" />
+            <span className="skeleton-row__text">
+              <span className="skeleton skeleton--line" style={{ width: `${66 - (index % 3) * 12}%` }} />
+              <span className="skeleton skeleton--line" style={{ width: `${42 - (index % 2) * 10}%` }} />
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/** A number that has not arrived yet, the size of the number it stands for. */
+export function SkeletonNumber() {
+  return (
+    <span className="skeleton-wait" aria-hidden="true">
+      <span className="skeleton skeleton--number" />
+    </span>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Screen frame
 // ---------------------------------------------------------------------------
 

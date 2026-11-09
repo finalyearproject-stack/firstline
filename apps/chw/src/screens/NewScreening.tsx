@@ -10,7 +10,7 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { SCREENING_FOCUSES, type RiskLevel, type ScreeningFocus } from '@rhm/shared';
 import { FOCUS_CATALOGUE, focusFits } from '@rhm/triage';
-import { Empty, PatientMark, Screen } from '../components/shell.tsx';
+import { Empty, PatientMark, Screen, SkeletonList } from '../components/shell.tsx';
 import { IconPatients, IconPlus, IconSearch } from '../components/icons.tsx';
 import { useUnlocked } from '../state/session.tsx';
 import { lastResults, searchPatients, type PatientView } from '../db/repository.ts';
@@ -92,7 +92,7 @@ export function NewScreeningScreen() {
         </Link>
 
         {patients === null ? (
-          <p className="muted">Loading…</p>
+          <SkeletonList rows={4} />
         ) : fitting.length === 0 ? (
           <Empty
             icon={term ? IconSearch : IconPatients}

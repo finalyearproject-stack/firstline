@@ -42,7 +42,7 @@ import {
   type RuleSet,
   type TriageOutcome,
 } from '@rhm/triage';
-import { Alert, ChoiceGroup, Field, Screen, Steps } from '../components/shell.tsx';
+import { Alert, ChoiceGroup, Field, Screen, SkeletonList, Steps } from '../components/shell.tsx';
 import { AncCard, BreathingCounter, FacilityPicker, FocusPicker, MuacChoice, ReferralLetter } from '../components/screening-parts.tsx';
 import { IconAlert, IconCheck, IconClock, IconSend, SymptomIcon } from '../components/icons.tsx';
 import { useUnlocked } from '../state/session.tsx';
@@ -275,7 +275,7 @@ export function ScreeningScreen() {
   if (!patient) {
     return (
       <Screen title="Screening" back>
-        <p className="muted">Loading…</p>
+        <SkeletonList rows={3} header />
       </Screen>
     );
   }

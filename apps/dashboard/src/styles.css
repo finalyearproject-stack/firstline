@@ -2166,3 +2166,32 @@ button.mover:focus-visible { outline: 2px solid var(--brand-500); outline-offset
   .table-wrap td:first-child:has(> .linkbtn) { display: block; }
   .symptom-graph { scroll-margin-top: 64px; }
 }
+
+/* ================================================================== quieter surfaces */
+/* As in the VHT app: cards sit on the canvas without outlines, with a soft shadow in
+   light mode and a lighter fill in dark mode. Borders stay where they mean something:
+   inputs, alerts and notices, badges, the segmented control and the empty state. */
+:root { --shadow-soft: 0 1px 2px rgba(0, 0, 0, 0.05), 0 2px 10px -4px rgba(0, 0, 0, 0.08); }
+.card, .grid--kpi-primary, .grid--kpi-compact, .login__card {
+  border-color: transparent;
+  box-shadow: var(--shadow-soft);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .card,
+  :root:not([data-theme='light']) .grid--kpi-primary,
+  :root:not([data-theme='light']) .grid--kpi-compact,
+  :root:not([data-theme='light']) .login__card { background: var(--surface-2); box-shadow: none; }
+}
+:root[data-theme='dark'] .card,
+:root[data-theme='dark'] .grid--kpi-primary,
+:root[data-theme='dark'] .grid--kpi-compact,
+:root[data-theme='dark'] .login__card { background: var(--surface-2); box-shadow: none; }
+
+/* Letter spacing is tightened only on large headings and figures. */
+body, h3, h4, .card__title, .alert-item__title, .sidebar__title, .kpi__label, .btn, .mbar__title {
+  letter-spacing: normal;
+}
+
+/* Skeletons appear only if loading takes longer than a moment. */
+.loading { animation: loading-appear 1ms linear 150ms both; }
+@keyframes loading-appear { from { opacity: 0; } to { opacity: 1; } }

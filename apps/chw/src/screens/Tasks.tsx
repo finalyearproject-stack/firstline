@@ -4,7 +4,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { applyTheme, getTheme, type ThemeChoice } from '../theme.ts';
-import { Alert, ChoiceGroup, Empty, Screen, formatDate, initials } from '../components/shell.tsx';
+import { Alert, ChoiceGroup, Empty, Screen, SkeletonList, formatDate, initials } from '../components/shell.tsx';
 import { IconFollowUp, IconSync } from '../components/icons.tsx';
 import { useSession, useUnlocked } from '../state/session.tsx';
 import { useSync } from '../state/sync.tsx';
@@ -42,7 +42,7 @@ export function FollowUpsScreen() {
   return (
     <Screen title="Follow-up">
       {loading ? (
-        <p className="muted">Loading…</p>
+        <SkeletonList rows={4} />
       ) : items.length === 0 ? (
         <Empty
           icon={IconFollowUp}

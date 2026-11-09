@@ -2337,3 +2337,40 @@ body, h2, h3, .app-header__title, .greeting, .btn, .field__label, .list__title, 
 .stat__label, .stat-strip__value, .toast__title, .auth__name, .result__action, .ldoc__title {
   letter-spacing: normal;
 }
+
+/* ================================================================== loading skeletons */
+/* Shapes of the content being loaded. They appear only if loading takes longer than a
+   moment, so a fast phone shows the content without a flash of placeholders. */
+.skeleton-wait { display: block; animation: skeleton-appear 1ms linear 150ms both; }
+span.skeleton-wait { display: inline-block; }
+@keyframes skeleton-appear { from { opacity: 0; } to { opacity: 1; } }
+
+.skeleton-head { display: grid; gap: 10px; margin-bottom: 18px; }
+.skeleton--title { width: 52%; height: 22px; border-radius: 7px; }
+.skeleton--line { height: 12px; border-radius: 6px; }
+.skeleton--avatar { width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0; }
+.skeleton--number { width: 30px; height: 26px; border-radius: 7px; vertical-align: middle; }
+
+.skeleton-list {
+  overflow: hidden;
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: var(--shadow-soft);
+}
+.skeleton-row { display: flex; align-items: center; gap: 12px; padding: 14px; }
+.skeleton-row + .skeleton-row { border-top: 1px solid var(--hairline-soft); }
+.skeleton-row__text { display: grid; flex: 1; gap: 8px; }
+
+/* On the lighter dark-mode list surface, the shimmer is one step lighter so it shows. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .skeleton-list { background: var(--surface-2); box-shadow: none; }
+  :root:not([data-theme='light']) .skeleton-list .skeleton,
+  :root:not([data-theme='light']) .today .skeleton {
+    background-image: linear-gradient(90deg, var(--ink-200) 25%, var(--ink-300) 50%, var(--ink-200) 75%);
+  }
+}
+:root[data-theme='dark'] .skeleton-list { background: var(--surface-2); box-shadow: none; }
+:root[data-theme='dark'] .skeleton-list .skeleton,
+:root[data-theme='dark'] .today .skeleton {
+  background-image: linear-gradient(90deg, var(--ink-200) 25%, var(--ink-300) 50%, var(--ink-200) 75%);
+}

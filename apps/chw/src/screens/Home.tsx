@@ -9,7 +9,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FOCUS_CATALOGUE } from '@rhm/triage';
-import { PatientMark, Screen, SyncBadge } from '../components/shell.tsx';
+import { PatientMark, Screen, SkeletonNumber, SyncBadge } from '../components/shell.tsx';
 import { FOCUS_ICONS, focusName } from '../components/screening-parts.tsx';
 import { IconChevronRight, IconLock, IconPlus, IconSync } from '../components/icons.tsx';
 import { deviceStats, listRecentScreenings, type DeviceStats, type RecentScreening } from '../db/repository.ts';
@@ -87,15 +87,15 @@ export function HomeScreen() {
           on the phone were dropped: nobody does anything differently for knowing them. */}
       <div className="today" aria-label="Today">
         <div className="today__cell">
-          <span className="today__value">{stats?.visitsToday ?? '–'}</span>
+          <span className="today__value">{stats ? stats.visitsToday : <SkeletonNumber />}</span>
           <span className="today__label">Screened today</span>
         </div>
         <div className="today__cell">
-          <span className="today__value">{stats?.referralsToday ?? '–'}</span>
+          <span className="today__value">{stats ? stats.referralsToday : <SkeletonNumber />}</span>
           <span className="today__label">Referred today</span>
         </div>
         <Link to="/follow-ups" className={`today__cell today__cell--link${due > 0 ? ' today__cell--due' : ''}`}>
-          <span className="today__value">{stats ? due : '–'}</span>
+          <span className="today__value">{stats ? due : <SkeletonNumber />}</span>
           <span className="today__label">Follow-ups due <IconChevronRight size={14} /></span>
         </Link>
       </div>
