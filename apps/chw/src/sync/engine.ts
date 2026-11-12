@@ -45,6 +45,8 @@ export interface SyncSummary {
 }
 
 const BATCH_SIZE = 50;
+/** How often a waiting outbox checks whether the server has become reachable. */
+const SWEEP_MS = 30_000;
 const MAX_RETRIES = 8;
 /** 2s, 4s, 8s ... capped at 15 minutes. */
 const BASE_BACKOFF_MS = 2_000;
@@ -93,9 +95,15 @@ export class SyncEngine {
   };
 
   private readonly push: (items: unknown[]) => Promise<{ results: SyncResult[] }>;
+  /** Whether the server answers right now; `navigator.onLine` alone cannot say. */
+  private readonly probe: () => Promise<boolean>;
 
-  constructor(push: (items: unknown[]) => Promise<{ results: SyncResult[] }>) {
+  constructor(
+    push: (items: unknown[]) => Promise<{ results: SyncResult[] }>,
+    probe: () => Promise<boolean> = async () => navigator.onLine,
+  ) {
     this.push = push;
+    this.probe = probe;
   }
 
   subscribe(listener: ProgressListener): () => void {
@@ -122,31 +130,82 @@ export class SyncEngine {
     return pending;
   }
 
-  /** Starts automatic synchronisation: on reconnect, on an interval, and on demand. */
+  /**
+   * Starts automatic synchronisation. Records go without the VHT doing anything:
+   *
+   *  - when the phone reports a connection again ("online"), everything waiting is sent,
+   *    whatever backoff it was serving;
+   *  - every 30 seconds, and whenever the app comes back to the screen, the server is
+   *    asked directly whether it can be reached, because a phone often regains data with
+   *    no "online" event (Wi-Fi that was connected all along, a data bundle bought);
+   *  - a record saved while online is sent at once (the provider calls `run()`).
+   */
   start(): () => void {
     this.stopped = false;
+    let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
     const onOnline = () => {
       this.emit({ state: 'IDLE' });
-      void this.run();
+      // A short random wait, so a village of phones regaining signal together does not
+      // reach the server in the same instant. Then nothing waits out its old backoff.
+      if (reconnectTimer) clearTimeout(reconnectTimer);
+      reconnectTimer = setTimeout(() => void this.reconnected(), Math.floor(Math.random() * 3_000));
     };
     const onOffline = () => this.emit({ state: 'OFFLINE' });
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') void this.sweep();
+    };
 
     window.addEventListener('online', onOnline);
     window.addEventListener('offline', onOffline);
+    if (typeof document !== 'undefined') document.addEventListener('visibilitychange', onVisible);
 
-    // A periodic sweep catches the case the events miss: a connection that is
-    // nominally "online" but was unusable until now.
-    const interval = setInterval(() => void this.run(), 60_000);
+    const interval = setInterval(() => void this.sweep(), SWEEP_MS);
 
     if (!navigator.onLine) this.emit({ state: 'OFFLINE' });
-    void this.run();
+    // Opening or unlocking the app is a fresh start: send whatever is waiting.
+    void this.reconnected();
 
     return () => {
       window.removeEventListener('online', onOnline);
       window.removeEventListener('offline', onOffline);
+      if (typeof document !== 'undefined') document.removeEventListener('visibilitychange', onVisible);
+      if (reconnectTimer) clearTimeout(reconnectTimer);
       clearInterval(interval);
       this.stop();
     };
+  }
+
+  /**
+   * The connection is back: make every waiting record due now and send.
+   *
+   * Backoff spaces out retries against a network that is failing; once the network is
+   * known to be back, making the VHT's records wait up to 15 minutes more would look,
+   * rightly, like synchronisation not working.
+   */
+  async reconnected(): Promise<SyncSummary | null> {
+    await this.makeAllDue();
+    return this.run();
+  }
+
+  /**
+   * Checks whether records are waiting and the server can be reached; if so, sends them
+   * now. Cheap when there is nothing to do: no request is made with an empty outbox.
+   */
+  async sweep(): Promise<SyncSummary | null> {
+    if (this.running || this.stopped || !navigator.onLine) return null;
+    const waiting = await db().queue.where('status').equals('PENDING').toArray();
+    if (waiting.length === 0) return null;
+    // Something is already due: an ordinary run will try it, with no extra request.
+    if (waiting.some((entry) => entry.nextAttemptAt <= Date.now())) return this.run();
+    if (!(await this.probe())) return null;
+    return this.reconnected();
+  }
+
+  private async makeAllDue(): Promise<void> {
+    const waiting = await db().queue.where('status').equals('PENDING').toArray();
+    const now = Date.now();
+    const late = waiting.filter((entry) => entry.nextAttemptAt > now);
+    if (late.length > 0) await db().queue.bulkPut(late.map((entry) => ({ ...entry, nextAttemptAt: now })));
   }
 
   /**
@@ -437,10 +496,7 @@ export class SyncEngine {
    */
   async runNow(): Promise<SyncSummary | null> {
     this.answerRequest();
-    const waiting = await db().queue.where('status').equals('PENDING').toArray();
-    const now = Date.now();
-    await db().queue.bulkPut(waiting.map((entry) => ({ ...entry, nextAttemptAt: Math.min(entry.nextAttemptAt, now) })));
-    return this.run();
+    return this.reconnected();
   }
 
   /** Shows at once that the tap was received, before the database and network reply. */

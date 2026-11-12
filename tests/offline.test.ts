@@ -499,6 +499,41 @@ describe('zero data loss (spec s13)', () => {
     expect(await pendingCount()).toBe(0);
   });
 
+  it('sends everything as soon as the connection returns, without waiting out the backoff', async () => {
+    await captureEncounter();
+    goOnline();
+    const failing = track(new SyncEngine(async () => { throw new TypeError('Failed to fetch'); }));
+    await failing.run();
+    expect(await engine.run()).toMatchObject({ applied: 0 }); // still waiting out the backoff
+
+    // The phone reports a connection again: nobody has to tap anything.
+    expect(await engine.reconnected()).toMatchObject({ applied: 6 });
+    expect(await pendingCount()).toBe(0);
+  });
+
+  it('notices the server is reachable again even when the phone never said it was offline', async () => {
+    await captureEncounter();
+    goOnline();
+    const failing = track(new SyncEngine(async () => { throw new TypeError('Failed to fetch'); }));
+    await failing.run();
+
+    // No "online" event: the regular check asks the server, finds it, and sends.
+    let serverUp = false;
+    const checking = track(new SyncEngine((items) => engine['push'](items), async () => serverUp));
+    expect(await checking.sweep()).toBeNull(); // server still unreachable: nothing sent
+    expect(await pendingCount()).toBe(6);
+    serverUp = true;
+    expect(await checking.sweep()).toMatchObject({ applied: 6 });
+    expect(await pendingCount()).toBe(0);
+  });
+
+  it('makes no request at all when there is nothing waiting', async () => {
+    let probed = 0;
+    const idle = track(new SyncEngine(async () => ({ results: [] }), async () => { probed += 1; return true; }));
+    expect(await idle.sweep()).toBeNull();
+    expect(probed).toBe(0);
+  });
+
   it('does not ask for a password when the network merely failed', async () => {
     await captureEncounter();
     goOnline();

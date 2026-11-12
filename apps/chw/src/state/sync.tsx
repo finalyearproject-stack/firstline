@@ -15,7 +15,7 @@ import {
 } from 'react';
 import { liveQuery } from 'dexie';
 import { SyncEngine, type SyncProgress } from '../sync/engine.ts';
-import { pushSync } from '../sync/api.ts';
+import { pushSync, reachable } from '../sync/api.ts';
 import { db } from '../db/local.ts';
 import { useSession } from './session.tsx';
 
@@ -51,7 +51,7 @@ export function SyncProvider({ children }: { children: ReactNode }) {
         const current = tokenRef.current;
         if (!current) throw new Error('Not signed in');
         return pushSync(current, items);
-      }),
+      }, () => reachable()),
     [],
   );
 
@@ -77,6 +77,15 @@ export function SyncProvider({ children }: { children: ReactNode }) {
     });
     return () => subscription.unsubscribe();
   }, []);
+
+  // A record saved while online goes at once, not at the next sweep. The outbox count
+  // rising is the signal: it changes the moment the repository's transaction commits.
+  const lastPending = useRef(0);
+  useEffect(() => {
+    const rose = pending > lastPending.current;
+    lastPending.current = pending;
+    if (rose && lockState === 'UNLOCKED' && navigator.onLine) void engine.run();
+  }, [pending, engine, lockState]);
 
   useEffect(() => {
     // Synchronisation runs only while the device is unlocked: the token is sealed under
