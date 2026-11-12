@@ -7,6 +7,7 @@
  * signed in.
  */
 import { createContext, useContext } from 'react';
+import type { PatientStatus } from '@rhm/shared';
 
 const API_BASE = import.meta.env.VITE_API_BASE ?? '/api/v1';
 const SESSION_KEY = 'rhm.dashboard.session';
@@ -167,8 +168,24 @@ export interface SymptomTrend {
   seriesUnit: 'day' | 'week' | 'month';
 }
 
+export interface LocationRow {
+  village: string;
+  parish: string;
+  subCounty: string;
+  district: string;
+}
+
+export interface Locations {
+  locations: LocationRow[];
+  /** Village names in use that no administrator has placed yet. */
+  unplaced: string[];
+}
+
 export interface VillageStat {
   village: string;
+  parish: string | null;
+  subCounty: string | null;
+  district: string | null;
   patients: number;
   visits: number;
   red: number;
@@ -225,7 +242,53 @@ export interface ReferralRow {
   createdAt: string;
   completedAt: string | null;
   patient: { firstName: string; lastName: string; village: string; age: number; sex: string };
+  place: LocationRow | null;
   riskLevel: 'RED' | 'AMBER' | 'GREEN' | null;
+}
+
+export type RiskLevel = 'RED' | 'AMBER' | 'GREEN';
+
+/** A row of the nurse's patient list. */
+export interface CarePatient {
+  id: string;
+  localId: string;
+  firstName: string;
+  lastName: string;
+  age: number;
+  sex: string;
+  village: string;
+  place: LocationRow | null;
+  status: PatientStatus | null;
+  statusSetAt: string | null;
+  lastVisitAt: string | null;
+  lastRisk: RiskLevel | null;
+  openReferrals: number;
+}
+
+export interface StatusEvent {
+  id: string;
+  status: PatientStatus;
+  note: string | null;
+  setBy: string;
+  setAt: string;
+}
+
+export interface PatientStatusInfo {
+  place: LocationRow | null;
+  history: StatusEvent[];
+}
+
+/** One screening with what was found, as GET /patients/:id/visits returns it. */
+export interface VisitBundle {
+  visit: { id: string; visitDate: string; village: string; focus: string | null; notes: string | null };
+  symptoms: Array<{ id: string; symptomName: string; severity: string; durationDays: number | null }>;
+  triage: { riskLevel: RiskLevel; triggeredLabels: string[]; recommendation: string } | null;
+  referral: { id: string; destination: string; urgency: string; status: string; reason: string } | null;
+}
+
+export interface PatientHistory {
+  patient: { id: string; firstName: string; lastName: string; age: number; sex: string; village: string; phone: string | null; localId: string };
+  visits: VisitBundle[];
 }
 
 export interface UserRow {

@@ -58,6 +58,21 @@ const chance = (p: number): boolean => random() < p;
 // the Luganda awareness content; a deployment elsewhere replaces both together.
 const VILLAGES = ['Kasangati', 'Kiwoko', 'Kalagi', 'Nakifuma', 'Bombo', 'Ngoma'];
 
+/**
+ * Where each demo place sits: district and sub-county or town council as published, but
+ * the parish (or ward) is a DEMONSTRATION VALUE named after the place itself, because
+ * no reliable public parish list was found for these towns. A deployment loads the
+ * district's official list in their place (Locations page, or POST /reference/locations).
+ */
+const DEMO_LOCATIONS: Array<{ village: string; parish: string; subCounty: string; district: string }> = [
+  { village: 'Kasangati', parish: 'Kasangati', subCounty: 'Nangabo', district: 'Wakiso' },
+  { village: 'Kiwoko', parish: 'Kiwoko', subCounty: 'Kiwoko Town Council', district: 'Nakaseke' },
+  { village: 'Ngoma', parish: 'Ngoma', subCounty: 'Ngoma', district: 'Nakaseke' },
+  { village: 'Kalagi', parish: 'Kalagi', subCounty: 'Kalagi Town Council', district: 'Mukono' },
+  { village: 'Nakifuma', parish: 'Nakifuma', subCounty: 'Nakifuma', district: 'Mukono' },
+  { village: 'Bombo', parish: 'Bombo', subCounty: 'Bombo Town Council', district: 'Luweero' },
+];
+
 // Names are kept in per-sex lists so the generated demo records are internally
 // consistent. A record reading "Samuel, female" is fictional either way, but it looks
 // like a data-quality defect to anyone reviewing the dashboard.
@@ -449,6 +464,43 @@ export async function seed(db: Db, log: (msg: string) => void = console.log): Pr
         `demo-seed:${id}`, id, 'patient', uuid(), 'CREATE', 'APPLIED',
         new Date(now - hoursAgo * 3_600_000).toISOString(),
       ],
+    );
+  }
+
+  // Locations, so the dashboard can group and filter by district, sub-county and parish.
+  for (const place of DEMO_LOCATIONS) {
+    await db.run(
+      'INSERT INTO locations (village, parish, sub_county, district, created_at, updated_at)' +
+        ' VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT (village) DO NOTHING',
+      [place.village, place.parish, place.subCounty, place.district, iso(120), iso(120)],
+    );
+  }
+
+  // Care statuses a nurse has already set, following each patient's latest referral, so
+  // the patient list shows a realistic mix. A separate random sequence keeps every figure
+  // above identical to earlier runs.
+  const statusRandom = rng(20261110);
+  const nurseId = userIds.get('nurse')!;
+  const latestReferrals = await db.all<{ patient_id: string; status: string; created_at: string; completed_at: string | null }>(
+    'SELECT r.patient_id, r.status, r.created_at, r.completed_at FROM referrals r' +
+      " JOIN patients p ON p.id = r.patient_id AND p.local_id LIKE 'DEMO-%'" +
+      ' WHERE r.created_at = (SELECT MAX(r2.created_at) FROM referrals r2 WHERE r2.patient_id = r.patient_id)' +
+      ' ORDER BY p.local_id',
+  );
+  for (const referral of latestReferrals) {
+    const roll = statusRandom();
+    let status: string | null = null;
+    if (referral.status === 'COMPLETED') status = roll < 0.45 ? 'RECOVERED' : roll < 0.8 ? 'ON_TREATMENT' : roll < 0.9 ? 'SEEN' : 'REFERRED_ON';
+    else if (referral.status === 'ACKNOWLEDGED') status = roll < 0.6 ? 'AWAITING_ARRIVAL' : roll < 0.8 ? 'SEEN' : null;
+    else if (referral.status === 'PENDING') status = roll < 0.2 ? 'AWAITING_ARRIVAL' : roll < 0.27 ? 'LOST_TO_FOLLOW_UP' : null;
+    if (!status) continue;
+    const setAt = new Date(Math.min(
+      now,
+      Date.parse(referral.completed_at ?? referral.created_at) + Math.round(2 + statusRandom() * 30) * 3_600_000,
+    )).toISOString();
+    await db.run(
+      'INSERT INTO patient_status_events (id, patient_id, status, note, set_by, set_at) VALUES (?, ?, ?, ?, ?, ?)',
+      [uuid(), referral.patient_id, status, null, nurseId, setAt],
     );
   }
 

@@ -71,7 +71,9 @@ export function HomeScreen() {
         </button>
       }
     >
-      <div style={{ marginBottom: 18 }}>
+      {/* The day at a glance, on the brand colour: who, where, and today's three numbers. */}
+      <section className="welcome" aria-label="Today">
+      <div>
         <h1 className="display">
           {greetingFor()}, {firstNameOf(user?.name)}
           <br />
@@ -86,7 +88,7 @@ export function HomeScreen() {
 
       {/* Today, in the three numbers a VHT can act on. Totals of everything ever recorded
           on the phone were dropped: nobody does anything differently for knowing them. */}
-      <div className="today" aria-label="Today">
+      <div className="today">
         <div className="today__cell">
           <span className="today__value">{stats ? stats.visitsToday : <SkeletonNumber />}</span>
           <span className="today__label">Screened today</span>
@@ -100,6 +102,7 @@ export function HomeScreen() {
           <span className="today__label">Follow-ups due <IconChevronRight size={14} /></span>
         </Link>
       </div>
+      </section>
 
       {/* The way into a screening: what it is for, then who. */}
       <div className="section-head">
@@ -111,7 +114,7 @@ export function HomeScreen() {
           return (
             <li key={option.focus}>
               <Link to={`/screen/new?focus=${option.focus}`} className="shortcut">
-                <span className="chip-icon chip-icon--sm chip-icon--neutral"><Icon size={18} /></span>
+                <span className={`chip-icon chip-icon--sm focus-chip focus-chip--${option.focus}`}><Icon size={18} /></span>
                 <span className="shortcut__name">{option.name}</span>
               </Link>
             </li>

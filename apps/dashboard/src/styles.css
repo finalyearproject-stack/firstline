@@ -1685,7 +1685,7 @@ tbody tr:hover { background: var(--surface-2); }
 
 .login {
   background-color: var(--canvas);
-  background-image: radial-gradient(60% 45% at 50% 0%, color-mix(in srgb, var(--brand-700) 16%, transparent), transparent 70%);
+  background-image: none;
 }
 .login__card {
   background: var(--surface);
@@ -1760,7 +1760,11 @@ tbody tr:hover { background: var(--surface-2); }
 }
 
 /* Inside the accent tile the mark's own frame would be a square within a square. */
-.sidebar__mark svg rect, .login__mark svg rect { display: none; }
+/* The mark draws its own tile, so its holders add no box of their own. */
+.sidebar__mark, .login__mark, .mbar__mark { background: none; box-shadow: none; color: var(--brand-700); }
+.sidebar__mark svg { width: 28px; height: 28px; }
+.login__mark svg { width: 44px; height: 44px; }
+.mbar__mark svg { width: 28px; height: 28px; }
 
 /* Status pills are soft fills, not outlined boxes. */
 .badge { border-color: transparent; }
@@ -2199,3 +2203,203 @@ body, h3, h4, .card__title, .alert-item__title, .sidebar__title, .kpi__label, .b
 /* A firmer press, matching the VHT app. */
 .btn:active:not(:disabled) { transform: scale(0.97); }
 @media (prefers-reduced-motion: reduce) { .btn:active:not(:disabled) { transform: none; } }
+
+/* Alerts: no badge row. Severity is the colour of a short rule on the left (alert rule). */
+.alert-item { position: relative; padding-left: 14px; }
+.alert-item::before { content: ''; position: absolute; left: 0; top: 14px; bottom: 14px; width: 3px; border-radius: 2px; background: var(--ink-300); }
+.alert-item:first-child::before { top: 2px; }
+.alert-item--HIGH::before   { background: var(--sev-high); }
+.alert-item--MEDIUM::before { background: var(--sev-medium); }
+.alert-item--INFO::before   { background: var(--ink-300); }
+.alert-item__title { font-weight: 600; }
+
+/* A word with a small coloured dot before it: quieter than a filled pill (dot-label). */
+.dot-label { display: inline-flex; align-items: center; gap: 7px; white-space: nowrap; font-size: 13px; }
+.dot-label::before { content: ''; width: 8px; height: 8px; border-radius: 50%; flex: none; background: var(--ink-300); }
+.dot-label--RED::before   { background: var(--red); }
+.dot-label--AMBER::before { background: var(--amber); }
+.dot-label--GREEN::before { background: var(--green); }
+.dot-label--stale { color: var(--sev-medium); }
+.dot-label--stale::before { background: var(--sev-medium); }
+.dot-label--fresh::before { background: var(--green); }
+.nowrap { white-space: nowrap; }
+
+/* Referral status: one bar in parts, counts listed beneath (status-bar). */
+.status-bar { padding-top: 6px; }
+.status-bar__track { display: flex; gap: 3px; height: 28px; border-radius: 6px; overflow: hidden; }
+.status-bar__part { min-width: 4px; }
+.status-bar__key { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 14px; margin: 18px 0 0; }
+.status-bar__key dt { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--ink-600); }
+.status-bar__key dd { margin: 4px 0 0; font-size: 20px; font-variant-numeric: tabular-nums; }
+.status-bar__key dd .muted { font-size: 13px; }
+.status-bar__swatch { width: 10px; height: 10px; border-radius: 3px; flex: none; }
+
+/* The phone bar's own rule comes later in the file, so restate the mark here. */
+.mbar .mbar__mark { background: none; box-shadow: none; color: var(--brand-700); }
+.mbar .mbar__mark svg { width: 30px; height: 30px; }
+
+/* ------------------------------------------------------------------ places and patients */
+
+.filters .field--grow { flex: 1 1 220px; }
+.filters .field--grow .input { width: 100%; }
+.filters .select:disabled { opacity: 0.55; }
+
+/* Villages grouped by district: the district line is a quiet band with its totals. */
+table.grouped .group-row th, table.grouped .group-row td {
+  background: var(--surface-2);
+  font-weight: 650;
+  color: var(--ink-900);
+}
+table.grouped .group-row th { text-align: left; }
+table.grouped tbody + tbody .group-row th, table.grouped tbody + tbody .group-row td { border-top: 10px solid var(--surface); }
+
+.row-link { font-weight: 650; color: var(--ink-900); text-decoration: none; }
+.row-link:hover { color: var(--brand-ink); text-decoration: underline; text-underline-offset: 3px; }
+.status--new { color: var(--sev-medium); font-weight: 600; }
+
+.pager { display: flex; align-items: center; justify-content: flex-end; gap: 10px; padding-top: 14px; }
+.pager > span { margin-right: auto; }
+
+.grid--patient { display: grid; grid-template-columns: minmax(260px, 360px) minmax(0, 1fr); gap: 20px; align-items: start; }
+.grid--patient > div { display: grid; gap: 20px; }
+@media (max-width: 1100px) { .grid--patient { grid-template-columns: minmax(0, 1fr); } }
+
+.status-now { font-size: 20px; font-weight: 650; letter-spacing: -0.01em; }
+.status-form { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--hairline); }
+.status-form fieldset { border: none; margin: 0 0 14px; padding: 0; }
+.status-form legend { padding: 0; margin-bottom: 8px; font-weight: 650; color: var(--ink-700); }
+.status-options { display: grid; gap: 6px; }
+.status-option {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 12px; border-radius: 10px;
+  background: var(--surface-2); cursor: pointer; font-size: 14px;
+}
+.status-option input { accent-color: var(--brand-700); margin: 0; }
+.status-option:has(input:checked) { background: color-mix(in srgb, var(--brand-700) 12%, var(--surface)); color: var(--ink-900); }
+.status-option .muted { margin-left: auto; }
+.status-form textarea { resize: vertical; min-height: 60px; font: inherit; }
+
+.place-list { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 16px; margin: 0; }
+.place-list dt { font-size: 12px; color: var(--ink-500); }
+.place-list dd { margin: 2px 0 0; font-weight: 600; }
+
+.history, .visits, .plain-list { list-style: none; margin: 0; padding: 0; }
+.history li, .plain-list li { padding: 10px 0; border-bottom: 1px solid var(--hairline); }
+.history li:last-child, .plain-list li:last-child { border-bottom: none; }
+.visits > li { padding: 14px 0; border-bottom: 1px solid var(--hairline); display: grid; gap: 6px; }
+.visits > li:first-child { padding-top: 0; }
+.visits > li:last-child { border-bottom: none; }
+.visits__head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.visits__head .dot-label { font-weight: 650; font-size: 14px; }
+.visits__found { margin: 0; padding-left: 18px; font-size: 14px; }
+.visits__referral { color: var(--ink-700); }
+
+/* ================================================================== colour (sidebar) */
+/*
+ * Colour with a job. The brand indigo frames the product: a deep indigo sidebar and
+ * sign-in panel, tinted table headings, and a colour for each patient status. Red,
+ * amber and green stay reserved for triage results. Text on the indigo is at least
+ * 4.5:1.
+ */
+:root {
+  --side: #1e1b5c;
+  --side-ink: #dcdcfb;
+  --side-ink-2: #a9abef;
+  --side-line: rgba(255, 255, 255, 0.1);
+  --side-hover: rgba(255, 255, 255, 0.07);
+  --side-active: rgba(255, 255, 255, 0.14);
+  --th-bg: color-mix(in srgb, var(--brand-700) 7%, var(--surface));
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) { --side: #17154a; --th-bg: color-mix(in srgb, var(--brand-500) 12%, var(--surface)); }
+}
+:root[data-theme='dark'] { --side: #17154a; --th-bg: color-mix(in srgb, var(--brand-500) 12%, var(--surface)); }
+
+.sidebar { background: var(--side); color: var(--side-ink); border-right: none; }
+.sidebar__title { color: #ffffff; }
+.sidebar__subtitle { color: var(--side-ink-2); }
+.sidebar .sidebar__mark { color: #6f72ef; }
+.sidebar__section { color: var(--side-ink-2); }
+.sidebar a { color: var(--side-ink); }
+.sidebar__glyph { color: var(--side-ink-2); }
+.sidebar a:hover { background: var(--side-hover); color: #ffffff; }
+.sidebar a[aria-current='page'] { background: var(--side-active); color: #ffffff; box-shadow: none; }
+.sidebar a[aria-current='page'] .sidebar__glyph { color: #ffffff; }
+.sidebar .cmdk-trigger { background: var(--side-hover); border-color: var(--side-line); color: var(--side-ink-2); box-shadow: none; }
+.sidebar .cmdk-trigger:hover { color: #ffffff; border-color: rgba(255, 255, 255, 0.24); }
+.sidebar .cmdk-trigger kbd { background: rgba(255, 255, 255, 0.1); border-color: transparent; color: var(--side-ink); }
+.sidebar__footer { border-top-color: var(--side-line); }
+.sidebar__user { color: #ffffff; }
+.sidebar__role { color: var(--side-ink-2); }
+.sidebar__avatar { background: rgba(255, 255, 255, 0.14); color: #ffffff; }
+.sidebar .theme-switch { background: var(--side-hover); border-color: var(--side-line); }
+.sidebar .theme-switch button { color: var(--side-ink-2); }
+.sidebar .theme-switch button:hover { color: #ffffff; }
+.sidebar .theme-switch button[aria-pressed='true'] { background: rgba(255, 255, 255, 0.16); color: #ffffff; box-shadow: none; }
+.sidebar .theme-switch button:focus-visible { outline-color: #ffffff; }
+.sidebar__signout { color: var(--side-ink); border-color: rgba(255, 255, 255, 0.18); }
+.sidebar__signout:hover { background: var(--side-hover); color: #ffffff; }
+.sidebar :focus-visible { outline-color: #ffffff; }
+@media (max-width: 900px) {
+  .sidebar { border-bottom: none; }
+  .sidebar__brand { border-right-color: var(--side-line); }
+  .sidebar__footer { background: var(--side); border-left-color: var(--side-line); }
+}
+
+/* Table headings on a light brand tint. */
+th { background: var(--th-bg); color: var(--brand-ink); font-weight: 600; border-bottom-color: transparent; }
+thead th:first-child { border-top-left-radius: 8px; border-bottom-left-radius: 8px; }
+thead th:last-child { border-top-right-radius: 8px; border-bottom-right-radius: 8px; }
+table.grouped .group-row th, table.grouped .group-row td { background: var(--surface-2); color: var(--ink-900); }
+
+/* The headline figure carries the brand colour. */
+.kpi--teal .kpi__value { color: var(--brand-ink); }
+
+/* Patient care status: a colour for each, none of them triage red, amber or green. */
+.care--NEW               { color: var(--sev-medium); font-weight: 600; }
+.care--NEW::before       { background: var(--sev-medium); }
+.care--AWAITING_ARRIVAL::before  { background: #0284c7; }
+.care--SEEN::before              { background: var(--brand-700); }
+.care--ON_TREATMENT::before      { background: #7c3aed; }
+.care--REFERRED_ON::before       { background: #db2777; }
+.care--RECOVERED::before         { background: #0d9488; }
+.care--LOST_TO_FOLLOW_UP::before { background: #64748b; }
+.status-now.dot-label { font-size: 20px; gap: 10px; }
+.status-now.dot-label::before { width: 11px; height: 11px; }
+
+/* Sign-in: the brand panel beside the form. */
+.login { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); place-items: stretch; padding: 0; }
+.login .login__card { align-self: center; justify-self: center; width: min(380px, calc(100% - 48px)); margin: 32px 0; }
+.login__panel {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 40px;
+  padding: 48px 56px;
+  background: var(--side);
+  color: var(--side-ink);
+}
+.login__panel-brand { display: flex; align-items: center; gap: 12px; color: #6f72ef; }
+.login__panel-brand span { color: #ffffff; font-size: 18px; font-weight: 650; letter-spacing: -0.01em; }
+.login__headline { margin: 0 0 22px; max-width: 26ch; color: #ffffff; font-size: 30px; line-height: 1.2; font-weight: 650; letter-spacing: -0.025em; }
+.login__points { display: grid; gap: 12px; margin: 0; padding: 0; list-style: none; max-width: 42ch; font-size: 15px; line-height: 1.5; }
+.login__points li { position: relative; padding-left: 20px; }
+.login__points li::before { content: ''; position: absolute; left: 0; top: 0.6em; width: 8px; height: 8px; border-radius: 50%; background: #8b8ef3; }
+.login__foot { margin: 0; font-size: 13px; color: var(--side-ink-2); }
+@media (max-width: 900px) {
+  .login { grid-template-columns: minmax(0, 1fr); }
+  .login__panel { gap: 18px; padding: 28px 24px; }
+  .login__points, .login__foot { display: none; }
+  .login__headline { margin: 0; font-size: 22px; }
+}
+.login__brand--plain { text-align: left; margin-bottom: 22px; }
+/* On a phone the brand panel is a short band above the form. */
+@media (max-width: 900px) { .login__panel-brand span { font-size: 16px; } }
+
+/* "Not yet reviewed" in dark mode: the light amber ink, so it stays readable (4.5:1+). */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .care--NEW { color: #f2b86b; }
+  :root:not([data-theme='light']) .care--NEW::before { background: #f2b86b; }
+}
+:root[data-theme='dark'] .care--NEW { color: #f2b86b; }
+:root[data-theme='dark'] .care--NEW::before { background: #f2b86b; }

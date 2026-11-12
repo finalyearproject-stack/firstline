@@ -61,13 +61,7 @@ export function Sparkstep({ values, label, height = 36, className }: SparkProps)
 
   return (
     <svg className={className} width="100%" height={height} viewBox={`0 0 100 ${H}`} preserveAspectRatio="none" role="img" aria-label={label}>
-      <defs>
-        <linearGradient id={`spark-${id}`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="currentColor" stopOpacity="0.22" />
-          <stop offset="100%" stopColor="currentColor" stopOpacity="0" />
-        </linearGradient>
-      </defs>
-      <path d={area} fill={`url(#spark-${id})`} />
+      <path d={area} fill="currentColor" fillOpacity="0.1" />
       <path d={line} fill="none" stroke="currentColor" strokeWidth="1.5" vectorEffect="non-scaling-stroke" strokeLinejoin="round" />
     </svg>
   );

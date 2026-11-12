@@ -19,12 +19,16 @@ import {
   Kpi,
   Loading,
   Page,
+  formatAgo,
   formatDate,
   formatDateTime,
   usePhoneLimit,
   useResource,
 } from '../components/ui.tsx';
 import { IconAlert, IconClock, IconRules, IconSync, IconVersion } from '../components/icons.tsx';
+import { Link } from 'react-router-dom';
+import { can } from '@rhm/shared';
+import { PlaceFilter, SearchField, placeLine, useLocations, usePlaceFilter } from '../components/places.tsx';
 
 // ---------------------------------------------------------------------------
 // Referrals (spec s14: follow-up and referral monitoring)
@@ -35,12 +39,16 @@ export function ReferralsScreen() {
   const [status, setStatus] = useState('PENDING');
   const [urgency, setUrgency] = useState('');
   const [busyId, setBusyId] = useState<string | null>(null);
+  const filter = usePlaceFilter();
+  const locations = useLocations();
+  const seesPatients = session ? can(session.user.role, 'dashboard:identifiable') : false;
 
-  const query = new URLSearchParams({ pageSize: '50' });
+  const query = new URLSearchParams(filter.query);
+  query.set('pageSize', '50');
   if (status) query.set('status', status);
   if (urgency) query.set('urgency', urgency);
 
-  const referrals = useResource<ReferralRow[]>(`/referrals?${query}`, [status, urgency]);
+  const referrals = useResource<ReferralRow[]>(`/referrals?${query}`, [query.toString()]);
   const shown = usePhoneLimit(referrals.data);
 
   // Only a nurse or health officer may change a referral's state; an official viewing
@@ -60,31 +68,33 @@ export function ReferralsScreen() {
   return (
     <Page
       title="Referrals"
-      subtitle="Patients referred from the field, most urgent first"
-      actions={
-        <div className="row wrap" style={{ gap: 10 }}>
-          <div className="field">
-            <label htmlFor="status">Status</label>
-            <select id="status" className="select" value={status} onChange={(e) => setStatus(e.target.value)}>
-              <option value="">All</option>
-              <option value="PENDING">Pending</option>
-              <option value="ACKNOWLEDGED">Acknowledged</option>
-              <option value="COMPLETED">Completed</option>
-              <option value="CANCELLED">Cancelled</option>
-            </select>
-          </div>
-          <div className="field">
-            <label htmlFor="urgency">Urgency</label>
-            <select id="urgency" className="select" value={urgency} onChange={(e) => setUrgency(e.target.value)}>
-              <option value="">All</option>
-              <option value="IMMEDIATE">Immediate</option>
-              <option value="WITHIN_24H">Within 24 hours</option>
-              <option value="ROUTINE">Routine</option>
-            </select>
-          </div>
-        </div>
-      }
+      subtitle="Most urgent first"
     >
+      <div className="filters">
+        <SearchField id="referral-search" label="Patient name" placeholder="e.g. Namazzi"
+          value={filter.search} onChange={filter.setSearch} />
+        <PlaceFilter value={filter.place} onChange={filter.setPlace} locations={locations.data?.locations ?? []} />
+        <div className="field">
+          <label htmlFor="status">Status</label>
+          <select id="status" className="select" value={status} onChange={(e) => setStatus(e.target.value)}>
+            <option value="">All</option>
+            <option value="PENDING">Pending</option>
+            <option value="ACKNOWLEDGED">Acknowledged</option>
+            <option value="COMPLETED">Completed</option>
+            <option value="CANCELLED">Cancelled</option>
+          </select>
+        </div>
+        <div className="field">
+          <label htmlFor="urgency">Urgency</label>
+          <select id="urgency" className="select" value={urgency} onChange={(e) => setUrgency(e.target.value)}>
+            <option value="">All</option>
+            <option value="IMMEDIATE">Immediate</option>
+            <option value="WITHIN_24H">Within 24 hours</option>
+            <option value="ROUTINE">Routine</option>
+          </select>
+        </div>
+      </div>
+
       {referrals.error && <ErrorNotice message={referrals.error} onRetry={referrals.reload} />}
 
       <Card>
@@ -100,7 +110,6 @@ export function ReferralsScreen() {
                   <th>Patient</th>
                   <th>Village</th>
                   <th>Urgency</th>
-                  <th>Triage</th>
                   <th>Reason</th>
                   <th>Facility</th>
                   <th>Created</th>
@@ -112,20 +121,32 @@ export function ReferralsScreen() {
                 {shown.visible.map((referral) => (
                   <tr key={referral.id}>
                     <td>
-                      <strong>
-                        {referral.patient.firstName} {referral.patient.lastName}
-                      </strong>
+                      {seesPatients ? (
+                        <Link className="row-link" to={`/patients/${referral.patientId}`}>
+                          {referral.patient.firstName} {referral.patient.lastName}
+                        </Link>
+                      ) : (
+                        <strong>{referral.patient.firstName} {referral.patient.lastName}</strong>
+                      )}
                       <div className="small muted">
                         {referral.patient.age} yrs · {referral.patient.sex.toLowerCase()}
                       </div>
                     </td>
-                    <td>{referral.patient.village}</td>
-                    <td><Badge kind={referral.urgency}>{urgencyLabel(referral.urgency)}</Badge></td>
-                    <td>{referral.riskLevel ? <Badge kind={referral.riskLevel} /> : '—'}</td>
+                    <td>
+                      {referral.patient.village}
+                      <div className="small muted">{placeLine(referral.place)}</div>
+                    </td>
+                    <td>
+                      {/* The dot is the triage colour; the word is how soon the patient must go. */}
+                      <span className={`dot-label dot-label--${referral.riskLevel ?? 'NONE'}`}>
+                        {urgencyLabel(referral.urgency)}
+                        {referral.riskLevel && <span className="sr-only"> ({referral.riskLevel})</span>}
+                      </span>
+                    </td>
                     <td className="small" style={{ maxWidth: 240 }}>{referral.reason}</td>
                     <td className="small">{referral.destination}</td>
-                    <td className="small">{formatDate(referral.createdAt)}</td>
-                    <td><Badge kind={referral.status} /></td>
+                    <td className="small nowrap">{formatDate(referral.createdAt)}</td>
+                    <td className="small">{statusLabel(referral.status)}</td>
                     {canUpdate && (
                       <td>
                         {referral.status === 'PENDING' && (
@@ -169,7 +190,11 @@ export function ReferralsScreen() {
 }
 
 function urgencyLabel(urgency: string): string {
-  return urgency === 'IMMEDIATE' ? 'Immediate' : urgency === 'WITHIN_24H' ? '24 hours' : 'Routine';
+  return urgency === 'IMMEDIATE' ? 'Immediate' : urgency === 'WITHIN_24H' ? 'Within 24 hours' : 'Routine';
+}
+
+function statusLabel(status: string): string {
+  return status.charAt(0) + status.slice(1).toLowerCase();
 }
 
 // ---------------------------------------------------------------------------
@@ -180,7 +205,7 @@ export function SyncScreen() {
   const health = useResource<SyncHealth>('/dashboard/sync-health');
 
   return (
-    <Page title="Synchronisation" subtitle="How field devices are reaching the server">
+    <Page title="Synchronisation">
       {health.error && <ErrorNotice message={health.error} onRetry={health.reload} />}
 
       {health.loading ? (
@@ -199,11 +224,10 @@ export function SyncScreen() {
               <Empty>Every active CHW has synchronised in the last 48 hours.</Empty>
             ) : (
               <>
-                <div className="notice notice--info">
-                  A quiet device does not mean lost data. Records stay on the phone,
-                  encrypted, until it reaches a connection. Check whether the CHW has
-                  network coverage or needs support.
-                </div>
+                <p className="small muted" style={{ marginTop: 0 }}>
+                  A quiet phone does not mean lost data: records stay on it, encrypted, until
+                  it connects. Check whether the VHT has network coverage or needs help.
+                </p>
                 <div className="table-wrap">
                   <table>
                     <thead>
@@ -217,9 +241,7 @@ export function SyncScreen() {
                         <tr key={chw.chwId}>
                           <td><strong>{chw.name}</strong></td>
                           <td>
-                            {chw.hoursSinceLastSync === null
-                              ? <Badge kind="SUSPENDED">Never</Badge>
-                              : `${Math.round(chw.hoursSinceLastSync)} hours ago`}
+                            {chw.hoursSinceLastSync === null ? 'Never' : formatAgo(chw.hoursSinceLastSync)}
                           </td>
                         </tr>
                       ))}
@@ -294,7 +316,6 @@ export function UsersScreen() {
   return (
     <Page
       title="Users & roles"
-      subtitle="Accounts, permissions and access"
       actions={
         <button type="button" className="btn btn--primary" onClick={() => setCreating((v) => !v)}>
           {creating ? 'Cancel' : '+ Add user'}
@@ -549,7 +570,6 @@ export function AuditScreen() {
   return (
     <Page
       title="Audit log"
-      subtitle="Who did what, and when"
       actions={
         <div className="field">
           <label htmlFor="action">Action</label>

@@ -10,6 +10,7 @@ import { ApiError, asyncRoute } from '../middleware/errors.ts';
 import { hashPassword, passwordProblems } from '../auth/passwords.ts';
 import { AUDIT_ACTIONS, recordAuditSafely } from '../services/audit.ts';
 import { mapUser } from '../services/repositories.ts';
+import { listLocations, locationSchema, saveLocation } from '../services/locations.ts';
 
 export function userRoutes(db: Db): Router {
   const router = Router();
@@ -293,6 +294,34 @@ export function referenceRoutes(db: Db): Router {
         'SELECT DISTINCT village FROM patients ORDER BY village',
       );
       res.json({ data: rows.map((r) => r.village) });
+    }),
+  );
+
+  /** Every placed village and the names still waiting for a parish. */
+  router.get(
+    '/locations',
+    asyncRoute(async (_req, res) => {
+      res.json({ data: await listLocations(db) });
+    }),
+  );
+
+  /** Places a village in its parish, sub-county and district. Administrators only. */
+  router.post(
+    '/locations',
+    requireAnyPermission('system:configure'),
+    asyncRoute(async (req, res) => {
+      const user = authed(req);
+      const input = locationSchema.parse(req.body);
+      await saveLocation(db, input);
+      await recordAuditSafely(db, {
+        userId: user.id,
+        action: AUDIT_ACTIONS.LOCATION_SAVE,
+        entityType: 'location',
+        entityId: null,
+        metadata: { village: input.village, parish: input.parish, subCounty: input.subCounty, district: input.district },
+        ipAddress: req.ip ?? null,
+      });
+      res.status(201).json({ data: input });
     }),
   );
 

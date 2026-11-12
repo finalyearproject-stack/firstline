@@ -6,3 +6,4 @@ export * from './sms.ts';
 export * from './awareness-seed.ts';
 export * from './letter.ts';
 export * from './facilities.ts';
+export * from './care.ts';

@@ -456,6 +456,14 @@ export function Screen({
 function BottomNav() {
   return (
     <nav className="app-nav" aria-label="Main">
+      {/* On a desktop screen the tabs become a side rail, which also carries the name. */}
+      <div className="app-nav__brand" aria-hidden="true">
+        <AppMark size={32} />
+        <span>
+          <strong>FirstLine</strong>
+          <small>VHT screening and referral</small>
+        </span>
+      </div>
       <NavLink to="/" end>
         <span className="app-nav__glyph"><IconHome size={21} /></span>
         Home
@@ -471,6 +479,11 @@ function BottomNav() {
       <NavLink to="/awareness">
         <span className="app-nav__glyph"><IconLearn size={21} /></span>
         Learn
+      </NavLink>
+      {/* On a phone, sending lives in the status pill and on Home; a desktop rail has room for it. */}
+      <NavLink to="/sync" className="app-nav__desk">
+        <span className="app-nav__glyph"><IconSync size={21} /></span>
+        Sending records
       </NavLink>
     </nav>
   );
@@ -682,7 +695,7 @@ export function formatDate(iso: string): string {
   const date = new Date(iso);
   const today = new Date();
   const isToday = date.toDateString() === today.toDateString();
-  if (isToday) return `Today, ${date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}`;
+  if (isToday) return `Today, ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}`;
 
   const yesterday = new Date(today.getTime() - 86_400_000);
   if (date.toDateString() === yesterday.toDateString()) return 'Yesterday';

@@ -195,7 +195,7 @@ export function TrendsScreen() {
                     <Bar dataKey="current" fill="var(--c-brand)" radius={[3, 3, 0, 0]} maxBarSize={36} />
                     <Line
                       dataKey="previous"
-                      type="monotone"
+                      type="linear"
                       stroke="var(--ink-500)"
                       strokeDasharray="5 4"
                       strokeWidth={2}

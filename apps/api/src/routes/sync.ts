@@ -10,6 +10,7 @@ import { authed, requireAuth, requireAnyPermission } from '../auth/middleware.ts
 import { ApiError, asyncRoute } from '../middleware/errors.ts';
 import { AUDIT_ACTIONS, recordAuditSafely } from '../services/audit.ts';
 import { processSyncBatch } from '../services/sync.ts';
+import { locationFilterSchema } from '../services/locations.ts';
 import {
   defaultRange,
   getAlerts,
@@ -164,7 +165,7 @@ export function dashboardRoutes(db: Db): Router {
   router.get(
     '/villages',
     asyncRoute(async (req, res) => {
-      res.json({ data: await getVillageStats(db, resolveRange(req.query)) });
+      res.json({ data: await getVillageStats(db, resolveRange(req.query), locationFilterSchema.parse(req.query)) });
     }),
   );
 

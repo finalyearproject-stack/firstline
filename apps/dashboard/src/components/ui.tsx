@@ -19,8 +19,7 @@ import {
   IconUsers,
   IconSearch,
   IconVillages,
-  type IconProps,
-} from './icons.tsx';
+  type IconProps, IconPin, IconRecord } from './icons.tsx';
 import { CommandPalette, MOD, useCommandShortcut, type Command } from './command.tsx';
 import { CountUp } from './count-up.tsx';
 import { applyTheme } from '../theme.ts';
@@ -159,6 +158,7 @@ const NAV: Array<{ section: string; items: NavItem[] }> = [
   {
     section: 'Care',
     items: [
+      { to: '/patients', label: 'Patients', icon: IconRecord, permission: 'dashboard:identifiable' },
       { to: '/referrals', label: 'Referrals', icon: IconReferrals, permission: 'referral:read' },
       { to: '/chws', label: 'CHW activity', icon: IconChw },
     ],
@@ -169,6 +169,7 @@ const NAV: Array<{ section: string; items: NavItem[] }> = [
       { to: '/sync', label: 'Synchronisation', icon: IconSync },
       { to: '/users', label: 'Users & roles', icon: IconUsers, permission: 'user:manage' },
       { to: '/rules', label: 'Triage rules', icon: IconRules, permission: 'rules:manage' },
+      { to: '/locations', label: 'Locations', icon: IconPin, permission: 'system:configure' },
       { to: '/audit', label: 'Audit log', icon: IconAudit, permission: 'audit:read' },
     ],
   },
@@ -316,7 +317,7 @@ export function Shell({ children }: { children: ReactNode }) {
 // "More" sheet holding every destination plus the account controls.
 
 /** Order of preference for the bottom tabs; the role's first four permitted win. */
-const TAB_PRIORITY = ['/', '/referrals', '/analytics', '/trends', '/villages', '/chws', '/sync'];
+const TAB_PRIORITY = ['/', '/patients', '/referrals', '/analytics', '/trends', '/villages', '/chws', '/sync'];
 
 const SHORT_LABEL: Record<string, string> = {
   '/trends': 'Trends',
@@ -536,19 +537,6 @@ export type KpiTone = 'red' | 'amber' | 'green' | 'sky' | 'violet' | 'teal';
  * a scanning eye a shape to land on, and the label carries the meaning for anyone who
  * cannot see it.
  */
-/**
- * Change against the preceding period, as text. Deliberately NEUTRAL in colour: more urgent
- * results is not simply "bad" (it can mean better case-finding), and more screenings is not
- * simply "good", so the arrow states the direction and leaves the judgement to the reader.
- */
-function describeChange(current: number, previous: number): string | null {
-  if (current === 0 && previous === 0) return null;
-  if (previous === 0) return 'New';
-  const pct = Math.round(((current - previous) / previous) * 100);
-  if (pct === 0) return '→ 0%';
-  return `${pct > 0 ? '↑' : '↓'} ${Math.abs(pct)}%`;
-}
-
 export function Kpi({
   label,
   value,
@@ -588,7 +576,10 @@ export function Kpi({
   const days = series ? activeDays(series) : 0;
   const showChart = primary && !share && series !== undefined && days >= MIN_ACTIVE_DAYS;
   const showNote = primary && !share && series !== undefined && days < MIN_ACTIVE_DAYS;
-  const change = typeof value === 'number' && previous !== undefined ? describeChange(value, previous) : null;
+  // The preceding period is stated plainly ("was 224"), not as an arrow and a percentage:
+  // on small counts a percentage overstates the change, and the share cards already say
+  // "was 25%". It is neutral on purpose: more urgent results can mean better case-finding.
+  const was = primary && !share && previous !== undefined ? `was ${previous}` : null;
 
   return (
     <div className={`kpi kpi--${size}${tone ? ` kpi--${tone}` : ''}`}>
@@ -598,15 +589,15 @@ export function Kpi({
         <div className={`kpi__value${typeof value === 'string' ? ' kpi__value--text' : ''}`}>
           {typeof value === 'number' ? <CountUp value={value} /> : value}
         </div>
-        {change && (
-          <span className="kpi__delta" title={`${previous} ${previousLabel}`}>
-            {change}
-            <span className="sr-only"> {previousLabel} ({previous})</span>
-          </span>
-        )}
       </div>
 
-      {meta && <div className="kpi__meta">{meta}</div>}
+      {(meta || was) && (
+        <div className="kpi__meta">
+          {meta}
+          {meta && was && ' · '}
+          {was && <span title={previousLabel}>{was}</span>}
+        </div>
+      )}
 
       {showChart && (
         <div className="kpi__spark">
@@ -745,7 +736,19 @@ export function formatDateTime(iso: string): string {
     month: 'short',
     hour: '2-digit',
     minute: '2-digit',
+    hourCycle: 'h23',
   });
+}
+
+/** How long ago, in the unit a person would use: "3 hours ago", "6 weeks ago". */
+export function formatAgo(hours: number): string {
+  if (hours < 1) return 'Within the hour';
+  if (hours < 24) return `${Math.round(hours)} ${Math.round(hours) === 1 ? 'hour' : 'hours'} ago`;
+  const days = Math.floor(hours / 24);
+  if (days === 1) return 'Yesterday';
+  if (days < 14) return `${days} days ago`;
+  if (days < 60) return `${Math.floor(days / 7)} weeks ago`;
+  return `${Math.floor(days / 30)} months ago`;
 }
 
 export function formatDate(iso: string): string {

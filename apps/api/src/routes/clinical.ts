@@ -19,6 +19,7 @@ import { authed, requireAuth, requireAnyPermission } from '../auth/middleware.ts
 import { ApiError, asyncRoute } from '../middleware/errors.ts';
 import { AUDIT_ACTIONS, recordAuditSafely } from '../services/audit.ts';
 import { findPatient, mapReferral } from '../services/repositories.ts';
+import { locationClause, locationFilterSchema, placesOf } from '../services/locations.ts';
 
 // ---------------------------------------------------------------------------
 // Active rule set
@@ -239,6 +240,7 @@ export function triageRoutes(db: Db): Router {
 // ---------------------------------------------------------------------------
 
 const referralListSchema = z.object({
+  search: z.string().trim().max(120).optional(),
   status: z.enum(['PENDING', 'ACKNOWLEDGED', 'COMPLETED', 'CANCELLED']).optional(),
   urgency: z.enum(['IMMEDIATE', 'WITHIN_24H', 'ROUTINE']).optional(),
   village: z.string().trim().max(120).optional(),
@@ -272,9 +274,13 @@ export function referralRoutes(db: Db): Router {
         where.push('r.urgency = ?');
         params.push(q.urgency);
       }
-      if (q.village) {
-        where.push('p.village = ?');
-        params.push(q.village);
+      const place = locationClause('p.village', { ...locationFilterSchema.parse(req.query), village: q.village });
+      where.push(...place.sql);
+      params.push(...place.params);
+      if (q.search) {
+        where.push('(LOWER(p.first_name) LIKE ? OR LOWER(p.last_name) LIKE ?)');
+        const like = `%${q.search.toLowerCase()}%`;
+        params.push(like, like);
       }
 
       const clause = where.join(' AND ');
@@ -297,9 +303,11 @@ export function referralRoutes(db: Db): Router {
         ),
       ]);
 
+      const places = await placesOf(db, rows.map((row) => String(row.village)));
       res.json({
         data: rows.map((row) => ({
           ...mapReferral(row),
+          place: places.get(String(row.village)) ?? null,
           patient: {
             // A referral is inherently identifiable to the nurse acting on it; the
             // route is gated on `referral:read`, which district officials do not hold.

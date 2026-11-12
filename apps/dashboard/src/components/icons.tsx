@@ -160,3 +160,22 @@ export const IconVersion = (p: IconProps) => (
     <path d="M12 7.6v5l3 1.8" />
   </Svg>
 );
+
+// ------------------------------------------------------------ care, places
+
+/** A patient's record card: the nurse's patient list. */
+export const IconRecord = (p: IconProps) => (
+  <Svg {...p}>
+    <rect x="5" y="3.5" width="14" height="17" rx="2" />
+    <circle cx="12" cy="10" r="2.4" />
+    <path d="M8.3 16.6c.6-1.8 2-2.8 3.7-2.8s3.1 1 3.7 2.8" />
+  </Svg>
+);
+
+/** A map pin: where villages sit. */
+export const IconPin = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M12 20.5s6.5-5.6 6.5-10.6a6.5 6.5 0 0 0-13 0c0 5 6.5 10.6 6.5 10.6Z" />
+    <circle cx="12" cy="9.8" r="2.3" />
+  </Svg>
+);

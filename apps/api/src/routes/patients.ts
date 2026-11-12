@@ -24,7 +24,25 @@ import {
   upsertVisit,
   upsertVitals,
 } from '../services/repositories.ts';
-import { vitalsSchema } from '@rhm/shared';
+import { vitalsSchema, PATIENT_STATUSES } from '@rhm/shared';
+import { locationClause, locationFilterSchema, placesOf } from '../services/locations.ts';
+
+const careQuerySchema = z.object({
+  search: z.string().trim().max(120).optional(),
+  status: z.enum([...PATIENT_STATUSES, 'NOT_REVIEWED']).optional().catch(undefined),
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(100).default(50),
+});
+
+const statusInputSchema = z.object({
+  status: z.enum(PATIENT_STATUSES),
+  note: z.string().trim().max(1000).nullable().optional(),
+});
+
+/** The latest status row for each patient, as a derived table. */
+const LATEST_STATUS =
+  'SELECT s.patient_id, s.status, s.set_at FROM patient_status_events s' +
+  ' WHERE s.set_at = (SELECT MAX(s2.set_at) FROM patient_status_events s2 WHERE s2.patient_id = s.patient_id)';
 
 const listQuerySchema = z.object({
   search: z.string().trim().max(120).optional(),
@@ -93,6 +111,89 @@ export function patientRoutes(db: Db): Router {
           pageSize,
           total: Number(total?.n ?? 0),
           totalPages: Math.ceil(Number(total?.n ?? 0) / pageSize),
+        },
+      });
+    }),
+  );
+
+  // -------------------------------------------------------------------------
+  // GET /patients/care  — the nurse's patient list, by place and by status
+  // -------------------------------------------------------------------------
+  //
+  // Identifiable, so gated on `dashboard:identifiable`, which only nurses hold. Each row
+  // carries the patient's latest screening and current status, so the nurse can see
+  // who needs attention without opening every record.
+  router.get(
+    '/care',
+    requireAnyPermission('dashboard:identifiable'),
+    asyncRoute(async (req, res) => {
+      const user = authed(req);
+      const q = careQuerySchema.parse(req.query);
+      const place = locationClause('p.village', locationFilterSchema.parse(req.query));
+
+      const where: string[] = ['1 = 1', ...place.sql];
+      const params: Param[] = [...place.params];
+      if (q.search) {
+        where.push('(LOWER(p.first_name) LIKE ? OR LOWER(p.last_name) LIKE ? OR LOWER(p.local_id) LIKE ?)');
+        const like = `%${q.search.toLowerCase()}%`;
+        params.push(like, like, like);
+      }
+      if (q.status === 'NOT_REVIEWED') where.push('ls.status IS NULL');
+      else if (q.status) {
+        where.push('ls.status = ?');
+        params.push(q.status);
+      }
+
+      const from =
+        ' FROM patients p' +
+        ` LEFT JOIN (${LATEST_STATUS}) ls ON ls.patient_id = p.id`;
+      const clause = where.join(' AND ');
+      const offset = (q.page - 1) * q.pageSize;
+
+      const [rows, total] = await Promise.all([
+        db.all<Record<string, unknown>>(
+          'SELECT p.*, ls.status AS care_status, ls.set_at AS status_set_at,' +
+            ' (SELECT MAX(v.visit_date) FROM visits v WHERE v.patient_id = p.id) AS last_visit_at,' +
+            ' (SELECT t.risk_level FROM visits v JOIN triage_results t ON t.visit_id = v.id' +
+            '   WHERE v.patient_id = p.id ORDER BY v.visit_date DESC LIMIT 1) AS last_risk,' +
+            " (SELECT COUNT(*) FROM referrals r WHERE r.patient_id = p.id AND r.status IN ('PENDING','ACKNOWLEDGED')) AS open_referrals" +
+            from +
+            ` WHERE ${clause}` +
+            // Patients nobody has reviewed and whose last screening was urgent come first.
+            " ORDER BY CASE WHEN ls.status IS NULL THEN 0 ELSE 1 END," +
+            " CASE (SELECT t.risk_level FROM visits v JOIN triage_results t ON t.visit_id = v.id" +
+            "   WHERE v.patient_id = p.id ORDER BY v.visit_date DESC LIMIT 1) WHEN 'RED' THEN 0 WHEN 'AMBER' THEN 1 ELSE 2 END," +
+            ' last_visit_at DESC LIMIT ? OFFSET ?',
+          [...params, q.pageSize, offset],
+        ),
+        db.get<{ n: number }>(`SELECT COUNT(*) AS n${from} WHERE ${clause}`, params),
+      ]);
+
+      const places = await placesOf(db, rows.map((row) => String(row.village)));
+
+      await recordAuditSafely(db, {
+        userId: user.id,
+        action: AUDIT_ACTIONS.PATIENT_LIST,
+        entityType: 'patient',
+        metadata: { count: rows.length, view: 'care' },
+        ipAddress: req.ip ?? null,
+      });
+
+      res.json({
+        data: rows.map((row) => ({
+          ...mapPatient(row),
+          place: places.get(String(row.village)) ?? null,
+          status: (row.care_status as string | null) ?? null,
+          statusSetAt: (row.status_set_at as string | null) ?? null,
+          lastVisitAt: (row.last_visit_at as string | null) ?? null,
+          lastRisk: (row.last_risk as string | null) ?? null,
+          openReferrals: Number(row.open_referrals ?? 0),
+        })),
+        pagination: {
+          page: q.page,
+          pageSize: q.pageSize,
+          total: Number(total?.n ?? 0),
+          totalPages: Math.ceil(Number(total?.n ?? 0) / q.pageSize),
         },
       });
     }),
@@ -215,6 +316,78 @@ export function patientRoutes(db: Db): Router {
       );
 
       res.json({ data: { patient, visits: bundles } });
+    }),
+  );
+
+  // -------------------------------------------------------------------------
+  // GET /patients/:id/status  — current status and its history
+  // -------------------------------------------------------------------------
+  router.get(
+    '/:id/status',
+    requireAnyPermission('dashboard:identifiable'),
+    asyncRoute(async (req, res) => {
+      const user = authed(req);
+      const patient = await assertPatientAccess(db, user, req.params.id);
+      const [history, places] = await Promise.all([
+        db.all<Record<string, unknown>>(
+          'SELECT s.*, u.name AS set_by_name FROM patient_status_events s' +
+            ' JOIN users u ON u.id = s.set_by WHERE s.patient_id = ? ORDER BY s.set_at DESC',
+          [patient.id],
+        ),
+        placesOf(db, [patient.village]),
+      ]);
+      res.json({
+        data: {
+          place: places.get(patient.village) ?? null,
+          history: history.map((row) => ({
+            id: row.id,
+            status: row.status,
+            note: row.note ?? null,
+            setBy: row.set_by_name,
+            setAt: row.set_at,
+          })),
+        },
+      });
+    }),
+  );
+
+  // -------------------------------------------------------------------------
+  // POST /patients/:id/status  — a nurse sets this patient's status
+  // -------------------------------------------------------------------------
+  //
+  // One patient per request, by design: each status is a judgement about one person,
+  // recorded with who made it, so there is no bulk update.
+  router.post(
+    '/:id/status',
+    requireAnyPermission('followup:manage'),
+    asyncRoute(async (req, res) => {
+      const user = authed(req);
+      const patient = await assertPatientAccess(db, user, req.params.id);
+      const input = statusInputSchema.parse(req.body);
+      const event = {
+        id: uuid(),
+        status: input.status,
+        note: input.note || null,
+        setAt: new Date().toISOString(),
+      };
+
+      await db.run(
+        'INSERT INTO patient_status_events (id, patient_id, status, note, set_by, set_at) VALUES (?, ?, ?, ?, ?, ?)',
+        [event.id, patient.id, event.status, event.note, user.id, event.setAt],
+      );
+
+      // The note may name the patient or describe their condition, so it stays out of
+      // the audit log; the status and who set it are recorded.
+      await recordAuditSafely(db, {
+        userId: user.id,
+        action: AUDIT_ACTIONS.PATIENT_STATUS_SET,
+        entityType: 'patient',
+        entityId: patient.id,
+        metadata: { status: event.status },
+        ipAddress: req.ip ?? null,
+      });
+
+      res.status(201).json({ data: { ...event, setBy: user.username } });
     }),
   );
 

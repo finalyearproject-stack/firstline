@@ -12,7 +12,9 @@
  * PostgreSQL without dialect branching.
  */
 import type { ScreeningFocus } from '@rhm/shared';
+import type { LocationFilter } from '@rhm/shared';
 import type { Db, Param } from '../db/index.ts';
+import { locationClause } from './locations.ts';
 
 export interface DateRange {
   from: string;
@@ -172,6 +174,10 @@ export async function getTriageTrend(db: Db, filters: Filters): Promise<TriagePo
 
 export interface VillageStat {
   village: string;
+  /** Where the village sits; null until an administrator places it. */
+  parish: string | null;
+  subCounty: string | null;
+  district: string | null;
   patients: number;
   visits: number;
   red: number;
@@ -182,9 +188,10 @@ export interface VillageStat {
   redRate: number;
 }
 
-export async function getVillageStats(db: Db, filters: DateRange): Promise<VillageStat[]> {
+export async function getVillageStats(db: Db, filters: DateRange, place: LocationFilter = {}): Promise<VillageStat[]> {
+  const where = locationClause('vi.village', place);
   const rows = await db.all<Record<string, unknown>>(
-    'SELECT vi.village AS village,' +
+    'SELECT vi.village AS village, l.parish AS parish, l.sub_county AS sub_county, l.district AS district,' +
       ' COUNT(DISTINCT vi.patient_id) AS patients,' +
       ' COUNT(DISTINCT vi.id) AS visits,' +
       " SUM(CASE WHEN t.risk_level = 'RED'   THEN 1 ELSE 0 END) AS red," +
@@ -194,9 +201,11 @@ export async function getVillageStats(db: Db, filters: DateRange): Promise<Villa
       ' FROM visits vi' +
       ' LEFT JOIN triage_results t ON t.visit_id = vi.id' +
       ' LEFT JOIN referrals r ON r.visit_id = vi.id' +
+      ' LEFT JOIN locations l ON l.village = vi.village' +
       ' WHERE vi.visit_date BETWEEN ? AND ?' +
-      ' GROUP BY vi.village ORDER BY red DESC, visits DESC',
-    [filters.from, filters.to],
+      where.sql.map((clause) => ` AND ${clause}`).join('') +
+      ' GROUP BY vi.village, l.parish, l.sub_county, l.district ORDER BY red DESC, visits DESC',
+    [filters.from, filters.to, ...where.params],
   );
 
   return rows.map((row) => {
@@ -206,6 +215,9 @@ export async function getVillageStats(db: Db, filters: DateRange): Promise<Villa
     const screened = red + amber + green;
     return {
       village: String(row.village),
+      parish: (row.parish as string | null) ?? null,
+      subCounty: (row.sub_county as string | null) ?? null,
+      district: (row.district as string | null) ?? null,
       patients: Number(row.patients ?? 0),
       visits: Number(row.visits ?? 0),
       red,
@@ -444,6 +456,8 @@ export interface Alert {
   title: string;
   detail: string;
   category: 'CLINICAL' | 'OPERATIONAL' | 'SYNC';
+  /** Orders alerts of the same severity: a higher urgent share comes first. */
+  rank?: number;
 }
 
 /**
@@ -469,10 +483,9 @@ export async function getAlerts(db: Db): Promise<Alert[]> {
       alerts.push({
         id: `red-cluster-${village.village}`,
         severity: 'HIGH',
-        title: `${village.village} — ${village.red} RED flags this month`,
-        detail:
-          `${village.red} of ${village.red + village.amber + village.green} screenings in ` +
-          `${village.village} were flagged RED (${village.redRate}%). Review the referrals for this village.`,
+        title: `${village.village}: ${village.red} of ${village.red + village.amber + village.green} urgent (${Math.round(village.redRate)}%)`,
+        detail: '',
+        rank: village.redRate,
         category: 'CLINICAL',
       });
     }
@@ -483,8 +496,8 @@ export async function getAlerts(db: Db): Promise<Alert[]> {
     alerts.push({
       id: 'referrals-pending',
       severity: pending >= 25 ? 'HIGH' : 'MEDIUM',
-      title: `${pending} referrals pending follow-up`,
-      detail: 'These referrals have been created but not yet acknowledged by a facility.',
+      title: `${pending} referrals not yet acknowledged by a facility`,
+      detail: '',
       category: 'OPERATIONAL',
     });
   }
@@ -493,10 +506,8 @@ export async function getAlerts(db: Db): Promise<Alert[]> {
     alerts.push({
       id: 'sync-silent',
       severity: 'MEDIUM',
-      title: `${sync.chwsSilentOver48h.length} CHW(s) have not synchronised in 48 hours`,
-      detail:
-        'Their records are still safe on their devices. Check whether they have network access. ' +
-        sync.chwsSilentOver48h.map((c) => c.name).join(', '),
+      title: `${sync.chwsSilentOver48h.length === 1 ? '1 VHT has' : `${sync.chwsSilentOver48h.length} VHTs have`} not sent records for 2 days`,
+      detail: `${sync.chwsSilentOver48h.map((c) => c.name).join(', ')}. Their records are kept on the phone until it connects.`,
       category: 'SYNC',
     });
   }
@@ -505,8 +516,8 @@ export async function getAlerts(db: Db): Promise<Alert[]> {
     alerts.push({
       id: 'sync-rejected',
       severity: 'MEDIUM',
-      title: `${sync.rejectedLast24h} record(s) rejected during synchronisation`,
-      detail: 'Review the audit log to see which records failed validation.',
+      title: `${sync.rejectedLast24h === 1 ? '1 record' : `${sync.rejectedLast24h} records`} rejected in the last day`,
+      detail: 'The audit log shows which ones failed validation.',
       category: 'SYNC',
     });
   }
@@ -516,14 +527,14 @@ export async function getAlerts(db: Db): Promise<Alert[]> {
     alerts.push({
       id: `activity-${busiest.village}`,
       severity: 'INFO',
-      title: `Increased screening activity in ${busiest.village}`,
-      detail: `${busiest.visits} visits recorded in the last 30 days.`,
+      title: `${busiest.village} is the busiest village: ${busiest.visits} screenings`,
+      detail: '',
       category: 'OPERATIONAL',
     });
   }
 
   const order = { HIGH: 0, MEDIUM: 1, INFO: 2 };
-  return alerts.sort((a, b) => order[a.severity] - order[b.severity]);
+  return alerts.sort((a, b) => order[a.severity] - order[b.severity] || (b.rank ?? 0) - (a.rank ?? 0));
 }
 
 // ---------------------------------------------------------------------------

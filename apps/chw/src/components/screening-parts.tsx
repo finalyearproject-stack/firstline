@@ -68,7 +68,7 @@ export function FocusPicker({
         return (
           <li key={option.focus}>
             <button type="button" className="focus-card" onClick={() => onPick(option.focus)}>
-              <span className="chip-icon chip-icon--neutral"><Icon size={22} /></span>
+              <span className={`chip-icon focus-chip focus-chip--${option.focus}`}><Icon size={22} /></span>
               <span className="focus-card__text">
                 <span className="focus-card__name">{option.name}</span>
                 <span className="focus-card__hint">{option.hint}</span>

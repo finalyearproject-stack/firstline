@@ -18,6 +18,8 @@ import { Shell } from './components/ui.tsx';
 import { AnalyticsScreen, ChwScreen, OverviewScreen, VillagesScreen } from './screens/Overview.tsx';
 import { AuditScreen, ReferralsScreen, RulesScreen, SyncScreen, UsersScreen } from './screens/Manage.tsx';
 import { TrendsScreen } from './screens/Trends.tsx';
+import { PatientScreen, PatientsScreen } from './screens/Patients.tsx';
+import { LocationsScreen } from './screens/Locations.tsx';
 
 function SessionProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(() => loadSession());
@@ -72,11 +74,25 @@ function LoginScreen() {
 
   return (
     <div className="login">
+      <section className="login__panel">
+        <div className="login__panel-brand">
+          <Mark size={40} />
+          <span>FirstLine</span>
+        </div>
+        <div>
+          <h2 className="login__headline">Screening and referral, from the village to the district.</h2>
+          <ul className="login__points">
+            <li>VHTs screen and refer on the phone, with or without a network.</li>
+            <li>Nurses follow each referral and each patient’s status.</li>
+            <li>Districts see trends by place, never patients’ names.</li>
+          </ul>
+        </div>
+        <p className="login__foot">Ministry of Health VHT guidelines (2010) · WHO danger signs</p>
+      </section>
       <div className="login__card">
-        <div className="login__brand">
-          <div className="login__mark" aria-hidden="true"><Mark size={34} /></div>
-          <h1>FirstLine</h1>
-          <div className="small muted" style={{ marginTop: 4 }}>Programme dashboard</div>
+        <div className="login__brand login__brand--plain">
+          <h1>Sign in</h1>
+          <div className="small muted" style={{ marginTop: 4 }}>FirstLine programme dashboard</div>
         </div>
 
         <form onSubmit={submit}>
@@ -156,6 +172,18 @@ function Router() {
         <Route
           path="/referrals"
           element={<Require permission="referral:read"><ReferralsScreen /></Require>}
+        />
+        <Route
+          path="/patients"
+          element={<Require permission="dashboard:identifiable"><PatientsScreen /></Require>}
+        />
+        <Route
+          path="/patients/:id"
+          element={<Require permission="dashboard:identifiable"><PatientScreen /></Require>}
+        />
+        <Route
+          path="/locations"
+          element={<Require permission="system:configure"><LocationsScreen /></Require>}
         />
         <Route
           path="/users"
